@@ -1,9 +1,13 @@
 package com.app.gerencia.entities;
 
+import com.app.gerencia.enums.Role;
 import jakarta.persistence.*;
+
+import java.util.Date;
 
 
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "tb_user")
 public class User {
 
@@ -11,13 +15,15 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private String username;
-    private String phoneNumber;
-    private String email;
     private String cpf;
+    private String photo;
+    private Date dateBirth;
+    private String email;
+    private String phoneNumber;
     private String password;
-    private Role role;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public Long getId() {
         return id;
@@ -35,20 +41,28 @@ public class User {
         this.name = name;
     }
 
-    public String getUsername() {
-        return username;
+    public String getCpf() {
+        return cpf;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public String getPhoto() {
+        return photo;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
+    public Date getDateBirth() {
+        return dateBirth;
+    }
+
+    public void setDateBirth(Date dateBirth) {
+        this.dateBirth = dateBirth;
     }
 
     public String getEmail() {
@@ -59,12 +73,12 @@ public class User {
         this.email = email;
     }
 
-    public String getCpf() {
-        return cpf;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public String getPassword() {
