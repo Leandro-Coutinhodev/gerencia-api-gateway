@@ -1,4 +1,4 @@
-package com.app.gerencia;
+package com.app.gerencia.controllers;
 
 import com.app.gerencia.entities.User;
 import com.app.gerencia.services.UserService;
