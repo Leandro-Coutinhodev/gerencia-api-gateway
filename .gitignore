@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+## Ignorar chave da api
+src/main/resources/app.key
+src/main/resources/app.pub

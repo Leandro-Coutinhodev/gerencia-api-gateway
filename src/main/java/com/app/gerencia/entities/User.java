@@ -1,9 +1,11 @@
 package com.app.gerencia.entities;
 
-import com.app.gerencia.enums.Role;
+import com.app.gerencia.controllers.dto.LoginRequest;
 import jakarta.persistence.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Date;
+import java.util.Set;
 
 
 @Entity
@@ -16,6 +18,8 @@ public class User {
     @Column(name = "user_id")
     private Long id;
     private String name;
+
+    @Column(unique = true)
     private String cpf;
     private String photo;
     private Date dateBirth;
@@ -23,8 +27,16 @@ public class User {
     private String phoneNumber;
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+    // Configuração de cardinalidade das tabelas
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+
+            name = "tb_user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+
+    )
+    private Set<com.app.gerencia.entities.Role> roles;
 
     public Long getId() {
         return id;
@@ -90,11 +102,15 @@ public class User {
         this.password = password;
     }
 
-    public Role getRole() {
-        return role;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public  boolean isLoginCorrect(LoginRequest loginRequest, PasswordEncoder passwordEncoder){
+       return passwordEncoder.matches(loginRequest.password(), this.password);
     }
 }
