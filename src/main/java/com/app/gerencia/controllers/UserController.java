@@ -4,6 +4,7 @@ import com.app.gerencia.entities.User;
 import com.app.gerencia.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class UserController {
 
         try{
 
-            User userData = userService.getById(id);
+            User userData = userService.findById(id);
             return new ResponseEntity<>(userData, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
@@ -76,6 +77,19 @@ public class UserController {
         } catch (Exception e) {
             return new ResponseEntity<>("Erro ao deletar usuário", HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @GetMapping("/user/{id}/photo")
+    public ResponseEntity<byte[]> findUserPhoto(@PathVariable Long id){
+
+        User user = userService.findById(id);
+
+        if (user != null && user.getPhoto() != null) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)  // ou conforme seu tipo
+                    .body(user.getPhoto());
+        }
+            return ResponseEntity.notFound().build();
     }
 
 }

@@ -21,7 +21,10 @@ public class User {
 
     @Column(unique = true)
     private String cpf;
-    private String photo;
+
+    @Lob
+    private byte[] photo;
+
     private Date dateBirth;
     private String email;
     private String phoneNumber;
@@ -62,14 +65,13 @@ public class User {
         this.cpf = cpf;
     }
 
-    public String getPhoto() {
+    public byte[] getPhoto() {
         return photo;
     }
 
-    public void setPhoto(String photo) {
+    public void setPhoto(byte[] photo) {
         this.photo = photo;
     }
-
     public Date getDateBirth() {
         return dateBirth;
     }

@@ -10,14 +10,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/api-gateway/gerencia")
 public class TokenController {
@@ -28,12 +27,13 @@ public class TokenController {
 
     public TokenController(JwtEncoder jwtEncoder,
                            UserRepository userRepository,
-                           BCryptPasswordEncoder ṕasswordEncoder){
+                           BCryptPasswordEncoder passwordEncoder){
         this.jwtEncoder = jwtEncoder;
         this.userRepository = userRepository;
-        this.passwordEncoder = ṕasswordEncoder;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional(readOnly = true)
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
         var user = userRepository.findByCpf(loginRequest.cpf());
@@ -43,7 +43,7 @@ public class TokenController {
         }
 
         var now = Instant.now();
-        var expiresIn = 300L;
+        var expiresIn = 600L;
 
         var scopes = user.get().getRoles()
                 .stream()
@@ -55,6 +55,7 @@ public class TokenController {
                 .subject(user.get().getId().toString())
                 .expiresAt(now.plusSeconds(expiresIn))
                 .claim("scope", scopes)
+                .claim("name", user.get().getName())
                 .build();
 
         var jwtValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();

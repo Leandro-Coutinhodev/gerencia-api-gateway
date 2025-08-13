@@ -48,7 +48,6 @@
 //                        user.setPhoneNumber("(11) 11111-1111");
 //                        user.setPassword(passwordEncoder.encode("gerencia@adm"));
 //                        user.setRoles(Set.of(roleAdmin));
-//                        user.setPhoto("https://admin.photo/link");
 //                        userRepository.save(user);
 //                    } catch (Exception e) {
 //                        e.printStackTrace();

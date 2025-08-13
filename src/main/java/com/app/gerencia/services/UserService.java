@@ -26,7 +26,7 @@ public class UserService {
         return "usuário atualizado com sucesso";
     }
 
-    public User getById(Long id){
+    public User findById(Long id){
 
         return userRepository.findById(id).get();
     }

@@ -1,30 +1,30 @@
 package com.app.gerencia.controllers;
 
+import com.app.gerencia.entities.Admin;
+import com.app.gerencia.entities.Assistant;
 import com.app.gerencia.entities.Role;
-import com.app.gerencia.entities.Secretary;
 import com.app.gerencia.repository.RoleRepository;
-import com.app.gerencia.services.SecretaryService;
+import com.app.gerencia.services.AssistantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.sql.Date;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("api-gateway/gerencia/")
-public class SecretaryController {
+@RequestMapping("/api-gateway/gerencia")
+public class AssistantController {
 
     @Autowired
-    private SecretaryService secretaryService;
+    private AssistantService assistantService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -32,8 +32,7 @@ public class SecretaryController {
     @Autowired
     private RoleRepository roleRepository;
 
-    @PostMapping("/secretary")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @PostMapping("/assistant")
     public ResponseEntity<?> save(
             @RequestParam String name,
             @RequestParam String cpf,
@@ -41,60 +40,58 @@ public class SecretaryController {
             @RequestParam String phoneNumber,
             @RequestParam String password,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateBirth,
-            @RequestParam(required = false) MultipartFile photo
+            @RequestParam(required = false) MultipartFile photo,
+            @RequestParam String position
     ) throws Exception {
 
-        Secretary secretary = new Secretary();
-        secretary.setName(name);
-        secretary.setCpf(cpf);
-        secretary.setEmail(email);
-        secretary.setPhoneNumber(phoneNumber);
-        secretary.setPassword(password);
+        Assistant assistant = new Assistant();
+        assistant.setName(name);
+        assistant.setCpf(cpf);
+        assistant.setEmail(email);
+        assistant.setPhoneNumber(phoneNumber);
+        assistant.setPassword(passwordEncoder.encode(password));
+        assistant.setPosition(position);
 
         // conversão da data
-        secretary.setDateBirth(Date.valueOf(dateBirth));
+        assistant.setDateBirth(java.sql.Date.valueOf(dateBirth));
 
         if (photo != null && !photo.isEmpty()) {
-            secretary.setPhoto(photo.getBytes());
+            assistant.setPhoto(photo.getBytes());
         }
-        Role secretaryRole = roleRepository.findByName("SECRETARY");
-        if (secretaryRole == null) {
-            throw new RuntimeException("Role 'SECRETARY' não encontrada");
+        Role assistantRole = roleRepository.findByName("ASSISTANT");
+        if (assistantRole == null) {
+            throw new RuntimeException("Role 'ASSISTANT' não encontrada");
         }
 
-        secretary.setRoles(Set.of(secretaryRole));
-        secretaryService.save(secretary);
+        assistant.setRoles(Set.of(assistantRole));
+        assistantService.save(assistant);
         return ResponseEntity.ok("Usuário criado com sucesso");
 
     }
 
-    @GetMapping("/secretary/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Secretary> findById(@PathVariable Long id){
-
+    @GetMapping("/assistant/{id}")
+    public ResponseEntity<Assistant> findById(@PathVariable Long id){
         try {
 
-            Secretary secretary = secretaryService.findById(id);
-            return new ResponseEntity<>(secretary, HttpStatus.OK);
+            Assistant assistant = assistantService.findById(id);
+            return new ResponseEntity<>(assistant, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
 
-    @GetMapping("/secretary")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<List<Secretary>> findAll(){
-
+    @GetMapping("/assistant")
+    public ResponseEntity<List<Assistant>> findAll(){
         try {
 
-            List<Secretary> secretaries = secretaryService.findAll();
-            return new ResponseEntity<>(secretaries, HttpStatus.OK);
+            List<Assistant> assistants = assistantService.findAll();
+            return new ResponseEntity<>(assistants, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
 
-    @PutMapping("/secretary/{id}")
+    @PutMapping("/assistant/{id}")
     public ResponseEntity<?> update(
             @RequestParam String name,
             @RequestParam String cpf,
@@ -103,48 +100,51 @@ public class SecretaryController {
             @RequestParam(required = false) String password,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateBirth,
             @RequestParam(required = false) MultipartFile photo,
+            @RequestParam String position,
             @PathVariable Long id
     ) throws Exception {
 
-        Secretary secretary = secretaryService.findById(id);
-        if (secretary == null) {
+        Assistant assistant = assistantService.findById(id);
+        if (assistant == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Assistente não encontrado");
         }
 
-        secretary.setName(name);
-        secretary.setCpf(cpf);
-        secretary.setEmail(email);
-        secretary.setPhoneNumber(phoneNumber);
+        assistant.setName(name);
+        assistant.setCpf(cpf);
+        assistant.setEmail(email);
+        assistant.setPhoneNumber(phoneNumber);
+        assistant.setPosition(position);
 
         if (password != null && !password.isBlank()) {
-            secretary.setPassword(passwordEncoder.encode(password));
+            assistant.setPassword(passwordEncoder.encode(password));
         }
 
         // Converte e atualiza a data
-        secretary.setDateBirth(Date.valueOf(dateBirth));
+        assistant.setDateBirth(java.sql.Date.valueOf(dateBirth));
 
         if (photo != null && !photo.isEmpty()) {
-            secretary.setPhoto(photo.getBytes());
+            assistant.setPhoto(photo.getBytes());
         }
 
-        Role secretaryRole = roleRepository.findByName("SECRETARY");
-        if (secretaryRole == null) {
-            throw new RuntimeException("Role 'SECRETARY' não encontrada");
+        Role assistantRole = roleRepository.findByName("ASSISTANT");
+        if (assistantRole == null) {
+            throw new RuntimeException("Role 'ASSISTANT' não encontrada");
         }
         Set<Role> roles = new HashSet<>();
-        roles.add(secretaryRole);
-        secretary.setRoles(roles);
+        roles.add(assistantRole);
+        assistant.setRoles(roles);
 
 
-        secretaryService.update(secretary, id);
+        assistantService.update(assistant, id);
         return ResponseEntity.ok("Usuário atualizado com sucesso");
     }
 
-    @DeleteMapping("/secretary/{id}")
+
+    @DeleteMapping("/assistant/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id){
         try {
 
-            String response = secretaryService.delete(id);
+            String response = assistantService.delete(id);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Erro ao deletar", HttpStatus.BAD_REQUEST);
