@@ -41,7 +41,8 @@ public class AssistantController {
             @RequestParam String password,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateBirth,
             @RequestParam(required = false) MultipartFile photo,
-            @RequestParam String position
+            @RequestParam String position,
+            @RequestParam String affiliation
     ) throws Exception {
 
         Assistant assistant = new Assistant();
@@ -51,6 +52,7 @@ public class AssistantController {
         assistant.setPhoneNumber(phoneNumber);
         assistant.setPassword(passwordEncoder.encode(password));
         assistant.setPosition(position);
+        assistant.setAffiliation(affiliation);
 
         // conversão da data
         assistant.setDateBirth(java.sql.Date.valueOf(dateBirth));
@@ -101,6 +103,7 @@ public class AssistantController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateBirth,
             @RequestParam(required = false) MultipartFile photo,
             @RequestParam String position,
+            @RequestParam String affiliation,
             @PathVariable Long id
     ) throws Exception {
 
@@ -114,6 +117,7 @@ public class AssistantController {
         assistant.setEmail(email);
         assistant.setPhoneNumber(phoneNumber);
         assistant.setPosition(position);
+        assistant.setAffiliation(affiliation);
 
         if (password != null && !password.isBlank()) {
             assistant.setPassword(passwordEncoder.encode(password));

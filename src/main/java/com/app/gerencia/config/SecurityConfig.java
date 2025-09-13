@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ativar CORS com config personalizada
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/user/{id}/photo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/user/*/photo").permitAll()
                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))

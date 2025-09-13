@@ -10,6 +10,15 @@ public class Assistant extends User{
     //Função
     private String position;
 
+    private String affiliation;
+
+    public String getAffiliation() {
+        return affiliation;
+    }
+
+    public void setAffiliation(String affiliation) {
+        this.affiliation = affiliation;
+    }
 
     public String getPosition() {
         return position;

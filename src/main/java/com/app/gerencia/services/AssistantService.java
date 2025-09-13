@@ -40,6 +40,7 @@ public class AssistantService {
         existingAssistant.setPhoneNumber(updatedAssistant.getPhoneNumber());
         existingAssistant.setPosition(updatedAssistant.getPosition());
         existingAssistant.setDateBirth(updatedAssistant.getDateBirth());
+        existingAssistant.setAffiliation(updatedAssistant.getAffiliation());
 
         if (updatedAssistant.getPassword() != null && !updatedAssistant.getPassword().isBlank()) {
             existingAssistant.setPassword(updatedAssistant.getPassword());
