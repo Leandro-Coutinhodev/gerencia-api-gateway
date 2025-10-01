@@ -10,16 +10,20 @@ public record AnamnesisResponseDTO(
         String guardianName,
         String guardianPhone,
         Date interviewDate,
-        String status
+        String status,
+        String link
 ) {
-    public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis) {
+    public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis, String token) {
+        String link = "http://localhost:3000/form-anamnese?token=" + token;
+
         return new AnamnesisResponseDTO(
                 anamnesis.getId(),
                 anamnesis.getPatient().getName(),
                 anamnesis.getPatient().getGuardian() != null ? anamnesis.getPatient().getGuardian().getName() : null,
                 anamnesis.getPatient().getGuardian() != null ? anamnesis.getPatient().getGuardian().getPhoneNumber() : null,
                 anamnesis.getInterviewDate(),
-                mapStatus(anamnesis.getStatus())
+                mapStatus(anamnesis.getStatus()),
+                link
         );
     }
 

@@ -23,6 +23,10 @@ public class AnamnesisService {
         return anamnesisRepository.save(anamnesis);
     }
 
+    public Anamnesis findById(Long id){
+        return anamnesisRepository.findById(id).get();
+    }
+
 
     public Anamnesis save(Anamnesis anamnesis, Long patientId) {
         Optional<Patient> patient = patientRepository.findById(patientId);

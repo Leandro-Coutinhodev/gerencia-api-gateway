@@ -6,6 +6,7 @@ import com.app.gerencia.controllers.dto.AnamnesisResponseDTO;
 import com.app.gerencia.entities.Anamnesis;
 import com.app.gerencia.entities.Patient;
 import com.app.gerencia.services.AnamnesisService;
+import com.app.gerencia.services.AnamnesisTokenService;
 import com.app.gerencia.services.PatientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +24,12 @@ public class AnamnesisController {
 
     private final AnamnesisService anamnesisService;
     private final PatientService patientService;
+    private final AnamnesisTokenService anamnesisTokenService;
 
-    public AnamnesisController(AnamnesisService anamnesisService, PatientService patientService) {
+    public AnamnesisController(AnamnesisService anamnesisService, PatientService patientService, AnamnesisTokenService anamnesisTokenService) {
         this.anamnesisService = anamnesisService;
         this.patientService = patientService;
+        this.anamnesisTokenService = anamnesisTokenService;
     }
 
     @PostMapping("/anamnesis/{patientId}")
@@ -53,12 +56,42 @@ public class AnamnesisController {
         Anamnesis anamnesis = new Anamnesis();
         anamnesis.setPatient(patient);
         anamnesis.setInterviewDate(new Date());
-        anamnesis.setStatus('E'); // pode até remover se já está default no entity
+        anamnesis.setStatus('E');
 
         Anamnesis saved = anamnesisService.save(anamnesis);
 
-        return ResponseEntity.ok(AnamnesisResponseDTO.fromEntity(saved));
+        // gerar token para o link
+        String token = anamnesisTokenService.generateToken(patient.getId(), saved.getId());
+
+        return ResponseEntity.ok(AnamnesisResponseDTO.fromEntity(saved, token));
     }
+
+    @GetMapping("/anamnesis/form")
+    public ResponseEntity<AnamnesisDTO> getFormData(@RequestParam String token) {
+        try {
+            // Decodifica o token JWT
+            var jwt = anamnesisTokenService.decodeToken(token);
+
+            Long patientId = Long.valueOf(jwt.getClaim("patientId").toString());
+            Long anamnesisId = Long.valueOf(jwt.getClaim("anamnesisId").toString());
+
+            // Busca dados no banco
+            Patient patient = patientService.findById(patientId);
+            Anamnesis anamnesis = anamnesisService.findById(anamnesisId);
+
+            if (patient == null || anamnesis == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Retorna DTO completo (já mapeando dados existentes da anamnese)
+            return ResponseEntity.ok(new AnamnesisDTO(anamnesis));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
 
 
     @GetMapping("/anamnesis")
@@ -66,11 +99,19 @@ public class AnamnesisController {
         List<Anamnesis> anamneses = anamnesisService.findAll();
 
         List<AnamnesisResponseDTO> dtos = anamneses.stream()
-                .map(AnamnesisResponseDTO::fromEntity)   // <-- aqui
-                .collect(Collectors.toList());
+                .map(a -> {
+                    // gera o token a cada requisição (determinístico, se você não incluir jti/issuedAt)
+                    String token = anamnesisTokenService.generateToken(
+                            a.getPatient().getId(),
+                            a.getId()
+                    );
+                    return AnamnesisResponseDTO.fromEntity(a, token);
+                })
+                .toList();
 
         return ResponseEntity.ok(dtos);
     }
+
 
     @DeleteMapping("/anamnesis/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id){
@@ -82,5 +123,23 @@ public class AnamnesisController {
             return new ResponseEntity<>("Erro ao deletar", HttpStatus.BAD_REQUEST);
         }
     }
+
+    @PostMapping("/anamnesis/link")
+    public ResponseEntity<String> generateLink(@RequestBody AnamnesisRequestDTO dto) {
+        Patient patient = patientService.findById(dto.patientId());
+
+        Anamnesis anamnesis = new Anamnesis();
+        anamnesis.setPatient(patient);
+        anamnesis.setStatus('E');
+
+        Anamnesis saved = anamnesisService.save(anamnesis, dto.patientId());
+
+        String token = anamnesisTokenService.generateToken(patient.getId(), saved.getId());
+
+        String link = "http://localhost:3000/formulario?token=" + token;
+
+        return ResponseEntity.ok(link);
+    }
+
 
 }
