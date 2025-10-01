@@ -19,6 +19,11 @@ public class GuardianService {
         return "Salvo com sucesso!";
     }
 
+
+    public List<Guardian> findByCpf(String cpf) {
+        return guardianRepository.findByCpfContaining(cpf);
+    }
+
     public List<Guardian> findByName(String name) {
         return guardianRepository.findByNameContainingIgnoreCase(name);
     }

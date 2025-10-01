@@ -37,10 +37,18 @@ public class PatientService {
         return "Salvo com sucesso!";
     }
 
+    public List<Patient> findByCpf(String cpf){
+        return patientRepository.findByCpfContainingIgnoreCase(cpf);
+    }
 
-    public Patient findById(Long id){
+    public Patient findById(Long id) {
+        return patientRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Paciente não encontrado com id " + id));
+    }
 
-        return patientRepository.findById(id).get();
+
+    public List<Patient> findByName(String nome) {
+        return patientRepository.findByNameContainingIgnoreCase(nome);
     }
 
     public List<Patient> findAll(){

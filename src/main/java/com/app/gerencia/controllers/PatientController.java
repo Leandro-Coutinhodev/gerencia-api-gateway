@@ -75,6 +75,27 @@ public class PatientController {
         }
     }
 
+    @GetMapping("/patient/search/cpf")
+    public ResponseEntity<List<Patient>> findByCpf(@RequestParam(required = false) String cpf) {
+        try {
+            List<Patient> patients = patientService.findByCpf(cpf);
+            return ResponseEntity.ok(patients);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/patient/search/name")
+    public ResponseEntity<List<Patient>> searchByName(@RequestParam String nome) {
+        try {
+            List<Patient> patients = patientService.findByName(nome);
+            return ResponseEntity.ok(patients);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @DeleteMapping("/patient/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id){
 

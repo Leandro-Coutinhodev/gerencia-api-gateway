@@ -1,0 +1,49 @@
+.
+├── config
+│   ├── AdminUserConfig.java
+│   ├── CorsConfig.java
+│   └── SecurityConfig.java
+├── controllers
+│   ├── AdminController.java
+│   ├── AssistantController.java
+│   ├── dto
+│   │   ├── LoginRequest.java
+│   │   └── LoginResponse.java
+│   ├── GuardianController.java
+│   ├── PatientController.java
+│   ├── ProfessionalController.java
+│   ├── SecretaryController.java
+│   ├── TokenController.java
+│   └── UserController.java
+├── entities
+│   ├── Admin.java
+│   ├── Assistant.java
+│   ├── Guardian.java
+│   ├── Patient.java
+│   ├── Professional.java
+│   ├── Role.java
+│   ├── Secretary.java
+│   └── User.java
+├── enums
+│   └── Role.java
+├── estrutura.txt
+├── GerenciaApplication.java
+├── repository
+│   ├── AdminRepository.java
+│   ├── AssistantRepository.java
+│   ├── GuardianRepository.java
+│   ├── PatientRepository.java
+│   ├── ProfessionalRepository.java
+│   ├── RoleRepository.java
+│   ├── SecretaryRepository.java
+│   └── UserRepository.java
+└── services
+    ├── AdminService.java
+    ├── AssistantService.java
+    ├── GuardianService.java
+    ├── PatientService.java
+    ├── ProfessionalService.java
+    ├── SecretaryService.java
+    └── UserService.java
+
+8 directories, 39 files

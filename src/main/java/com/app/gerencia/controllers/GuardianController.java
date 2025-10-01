@@ -39,14 +39,11 @@ public class GuardianController {
         }
     }
 
-    @GetMapping("/guardian")
-    public ResponseEntity<List<Guardian>> findAll(@RequestParam(required = false) String name){
-
-        try{
-            if (name != null && !name.isEmpty()) {
-                return ResponseEntity.ok(guardianService.findByName(name));
-            }
-            return ResponseEntity.ok(guardianService.findAll());
+    @GetMapping("/guardian/")
+    public ResponseEntity<List<Guardian>> findByCpf(@RequestParam(required = false) String cpf) {
+        try {
+            List<Guardian> guardians = guardianService.findByCpf(cpf);
+            return ResponseEntity.ok(guardians);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
