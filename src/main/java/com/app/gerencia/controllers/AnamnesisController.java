@@ -33,18 +33,36 @@ public class AnamnesisController {
         this.anamnesisTokenService = anamnesisTokenService;
     }
 
-    @PostMapping("/anamnesis/{patientId}")
-    public ResponseEntity<Anamnesis> create(
-            @PathVariable Long patientId,
-            @RequestPart("anamnesis") Anamnesis anamnesis,
+    @PutMapping("/anamnesis/{id}/response   ")
+    public ResponseEntity<Anamnesis> responder(
+            @PathVariable Long id,
+            @RequestPart("anamnesis") Anamnesis updatedData,
             @RequestPart(value = "report", required = false) MultipartFile report
     ) throws IOException {
+        Anamnesis existing = anamnesisService.findById(id);
+
         if (report != null && !report.isEmpty()) {
-            anamnesis.setReport(report.getBytes());
+            existing.setReport(report.getBytes());
         }
-        anamnesis.setStatus('R');
-        return ResponseEntity.ok(anamnesisService.save(anamnesis, patientId));
+
+        // Atualiza os campos necessários
+        existing.setDiagnoses(updatedData.getDiagnoses());
+        existing.setMedicationAndAllergies(updatedData.getMedicationAndAllergies());
+        existing.setIndications(updatedData.getIndications());
+        existing.setObjectives(updatedData.getObjectives());
+        existing.setDevelopmentHistory(updatedData.getDevelopmentHistory());
+        existing.setPreferences(updatedData.getPreferences());
+        existing.setInterferingBehaviors(updatedData.getInterferingBehaviors());
+        existing.setQualityOfLife(updatedData.getQualityOfLife());
+        existing.setFeeding(updatedData.getFeeding());
+        existing.setSleep(updatedData.getSleep());
+        existing.setTherapists(updatedData.getTherapists());
+
+        existing.setStatus('R'); // Respondido
+
+        return ResponseEntity.ok(anamnesisService.save(existing));
     }
+
 
     @Transactional(readOnly = true)
     @GetMapping("/anamnesis/{patientId}")
