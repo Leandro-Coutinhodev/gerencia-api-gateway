@@ -10,6 +10,7 @@ import com.app.gerencia.services.AnamnesisTokenService;
 import com.app.gerencia.services.PatientService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,13 +42,21 @@ public class AnamnesisController {
         if (report != null && !report.isEmpty()) {
             anamnesis.setReport(report.getBytes());
         }
+        anamnesis.setStatus('R');
         return ResponseEntity.ok(anamnesisService.save(anamnesis, patientId));
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/anamnesis/{patientId}")
-    public ResponseEntity<List<Anamnesis>> findByPatient(@PathVariable Long patientId) {
-        return ResponseEntity.ok(anamnesisService.findByPatient(patientId));
+    public ResponseEntity<List<AnamnesisDTO>> findByPatient(@PathVariable Long patientId) {
+        return ResponseEntity.ok(
+                anamnesisService.findByPatient(patientId)
+                        .stream()
+                        .map(AnamnesisDTO::new) // converte cada entidade em DTO
+                        .toList()
+        );
     }
+
 
     @PostMapping("/anamnesis")
     public ResponseEntity<AnamnesisResponseDTO> create(@RequestBody AnamnesisRequestDTO dto) {
@@ -66,8 +75,8 @@ public class AnamnesisController {
         return ResponseEntity.ok(AnamnesisResponseDTO.fromEntity(saved, token));
     }
 
-    @GetMapping("/anamnesis/form")
-    public ResponseEntity<AnamnesisDTO> getFormData(@RequestParam String token) {
+    @GetMapping("/anamnesis/form/{token}")
+    public ResponseEntity<AnamnesisDTO> getFormData(@PathVariable String token) {
         try {
             // Decodifica o token JWT
             var jwt = anamnesisTokenService.decodeToken(token);
@@ -82,6 +91,10 @@ public class AnamnesisController {
             if (patient == null || anamnesis == null) {
                 return ResponseEntity.notFound().build();
             }
+            if (!anamnesis.getPatient().getId().equals(patientId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
 
             // Retorna DTO completo (já mapeando dados existentes da anamnese)
             return ResponseEntity.ok(new AnamnesisDTO(anamnesis));

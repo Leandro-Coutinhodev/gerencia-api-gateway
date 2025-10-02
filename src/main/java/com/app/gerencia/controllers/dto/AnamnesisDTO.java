@@ -1,6 +1,8 @@
 package com.app.gerencia.controllers.dto;
 
 import com.app.gerencia.entities.Anamnesis;
+
+import java.util.Base64;
 import java.util.Date;
 
 public record AnamnesisDTO(
@@ -19,7 +21,7 @@ public record AnamnesisDTO(
         String feeding,
         String sleep,
         String therapists,
-        byte[] report
+        String report
 ) {
     public AnamnesisDTO(Anamnesis anamnesis) {
         this(
@@ -38,7 +40,7 @@ public record AnamnesisDTO(
                 anamnesis.getFeeding(),
                 anamnesis.getSleep(),
                 anamnesis.getTherapists(),
-                anamnesis.getReport()
+                anamnesis.getReport() != null ? Base64.getEncoder().encodeToString(anamnesis.getReport()) : null
         );
     }
 }
