@@ -21,10 +21,12 @@ public record AnamnesisDTO(
         String feeding,
         String sleep,
         String therapists,
-        String report
+        String report,
+        String link
 ) {
-    public AnamnesisDTO(Anamnesis anamnesis) {
-        this(
+    public AnamnesisDTO(Anamnesis anamnesis, String token) {
+                link = String link = "http://localhost:3000/form-anamnese/" + token;
+                return new AnamnesisDTO(
                 anamnesis.getId(),
                 anamnesis.getPatient() != null ? anamnesis.getPatient().getId() : null,
                 anamnesis.getPatient() != null ? anamnesis.getPatient().getName() : null,
@@ -40,7 +42,9 @@ public record AnamnesisDTO(
                 anamnesis.getFeeding(),
                 anamnesis.getSleep(),
                 anamnesis.getTherapists(),
-                anamnesis.getReport() != null ? Base64.getEncoder().encodeToString(anamnesis.getReport()) : null
+                anamnesis.getReport() != null ? Base64.getEncoder().encodeToString(anamnesis.getReport()) : null,
+            link
         );
+
     }
 }

@@ -33,8 +33,8 @@ public class AnamnesisController {
         this.anamnesisTokenService = anamnesisTokenService;
     }
 
-    @PutMapping("/anamnesis/{id}/response   ")
-    public ResponseEntity<Anamnesis> responder(
+    @PutMapping("/anamnesis/{id}/response")
+    public ResponseEntity<AnamnesisDTO> responder(
             @PathVariable Long id,
             @RequestPart("anamnesis") Anamnesis updatedData,
             @RequestPart(value = "report", required = false) MultipartFile report
@@ -60,7 +60,9 @@ public class AnamnesisController {
 
         existing.setStatus('R'); // Respondido
 
-        return ResponseEntity.ok(anamnesisService.save(existing));
+        Anamnesis saved = anamnesisService.save(existing);
+
+        return ResponseEntity.ok(new AnamnesisDTO(saved));
     }
 
 
