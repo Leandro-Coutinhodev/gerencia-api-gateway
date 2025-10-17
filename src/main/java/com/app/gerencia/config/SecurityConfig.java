@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/user/*/photo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/form/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/report").permitAll()
                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
