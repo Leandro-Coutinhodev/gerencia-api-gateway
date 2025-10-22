@@ -27,6 +27,27 @@ public class Patient {
     @JoinColumn(name = "guardian_id")
     private Guardian guardian;
 
+    @Lob
+    private byte[] photo;
+
+    private String kinship;
+
+    public String getKinship() {
+        return kinship;
+    }
+
+    public void setKinship(String kinship) {
+        this.kinship = kinship;
+    }
+
+    public byte[] getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(byte[] photo) {
+        this.photo = photo;
+    }
+
     public Long getId() {
         return id;
     }

@@ -26,9 +26,11 @@ public class PatientController {
     private GuardianRepository guardianRepository;
 
     @PostMapping("/patient")
-    public ResponseEntity<String> save(@RequestBody Patient patient){
+    public ResponseEntity<String> save(@RequestPart("patient") Patient patient, @RequestPart("photo") MultipartFile photo){
 
         try{
+            if(photo != null && !photo.isEmpty())
+                patient.setPhoto(photo.getBytes());
 
             String response = patientService.save(patient);
 

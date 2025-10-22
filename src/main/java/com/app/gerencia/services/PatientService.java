@@ -64,6 +64,7 @@ public class PatientService {
         existing.setName(patient.getName());
         existing.setCpf(patient.getCpf());
         existing.setDateBirth(patient.getDateBirth());
+        existing.setKinship(patient.getKinship());
 
         // Atualiza ou cadastra o responsável
         if (patient.getGuardian() != null) {
@@ -77,7 +78,8 @@ public class PatientService {
                 guardian.setName(guardianData.getName());
                 guardian.setCpf(guardianData.getCpf());
                 guardian.setEmail(guardianData.getEmail());
-                guardian.setPhoneNumber(guardianData.getPhoneNumber());
+                guardian.setPhoneNumber1(guardianData.getPhoneNumber1());
+                guardian.setPhoneNumber2(guardianData.getPhoneNumber2());
                 guardian.setAddressLine1(guardianData.getAddressLine1());
                 guardian.setDateBirth(guardianData.getDateBirth());
                 guardian.setCep(guardianData.getCep());

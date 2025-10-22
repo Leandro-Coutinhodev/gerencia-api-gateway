@@ -22,7 +22,7 @@ public record AnamnesisResponseDTO(
                 anamnesis.getPatient().getId(),
                 anamnesis.getPatient().getName(),
                 anamnesis.getPatient().getGuardian() != null ? anamnesis.getPatient().getGuardian().getName() : null,
-                anamnesis.getPatient().getGuardian() != null ? anamnesis.getPatient().getGuardian().getPhoneNumber() : null,
+                anamnesis.getPatient().getGuardian() != null ? anamnesis.getPatient().getGuardian().getPhoneNumber1() : null,
                 anamnesis.getInterviewDate(),
                 mapStatus(anamnesis.getStatus()),
                 link

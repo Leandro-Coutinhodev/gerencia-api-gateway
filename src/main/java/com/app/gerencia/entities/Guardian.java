@@ -20,8 +20,11 @@ public class Guardian {
     private String cpf;
     private String email;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
+    @Column(name = "phone_number_1")
+    private String phoneNumber1;
+
+    @Column(name = "phone_number_2")
+    private String phoneNumber2;
 
     @Column(name = "address_line_1")
     private String addressLine1;
@@ -33,6 +36,8 @@ public class Guardian {
     private String cep;
 
     private String state;
+
+
     private String city;
     private String number;
 
@@ -73,14 +78,6 @@ public class Guardian {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
     }
 
     public String getAddressLine1() {
@@ -146,4 +143,22 @@ public class Guardian {
     public void setAddressLine2(String addressLine2) {
         this.addressLine2 = addressLine2;
     }
+
+    public String getPhoneNumber1() {
+        return phoneNumber1;
+    }
+
+    public void setPhoneNumber1(String phoneNumber1) {
+        this.phoneNumber1 = phoneNumber1;
+    }
+
+    public String getPhoneNumber2() {
+        return phoneNumber2;
+    }
+
+    public void setPhoneNumber2(String phoneNumber2) {
+        this.phoneNumber2 = phoneNumber2;
+    }
+
+
 }
