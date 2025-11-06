@@ -1,6 +1,7 @@
 package com.app.gerencia.entities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 
@@ -23,11 +24,12 @@ public class Patient {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateBirth;
 
-    @ManyToOne(cascade = CascadeType.ALL    )
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY )
     @JoinColumn(name = "guardian_id")
     private Guardian guardian;
 
     @Lob
+    @JsonIgnore
     private byte[] photo;
 
     private String kinship;

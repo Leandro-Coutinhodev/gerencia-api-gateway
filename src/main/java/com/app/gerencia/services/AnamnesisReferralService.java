@@ -11,31 +11,37 @@ import com.app.gerencia.repository.AssistantRepository;
 import com.app.gerencia.repository.ProfessionalRepository;
 import com.nimbusds.jose.shaded.gson.Gson;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.sql.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class AnamnesisReferralService{
 
-    private AnamnesisReferralRepository referralRepository;
+    private final AnamnesisReferralRepository referralRepository;
 
-    private AnamnesisRepository anamnesisRepository;
+    private final AnamnesisRepository anamnesisRepository;
 
-    private AssistantRepository assistantRepository;
+    private final AssistantRepository assistantRepository;
 
-    private ProfessionalRepository professionalRepository;
+    private final ProfessionalRepository professionalRepository;
+
+    private final EmailService emailService;
 
     public AnamnesisReferralService(AnamnesisReferralRepository anamnesisReferralRepository,
                                     AnamnesisRepository anamnesisRepository,
                                     AssistantRepository assistantRepository,
-                                    ProfessionalRepository professionalRepository){
+                                    ProfessionalRepository professionalRepository,
+                                    EmailService emailService){
         referralRepository = anamnesisReferralRepository;
         this.anamnesisRepository = anamnesisRepository;
         this.assistantRepository = assistantRepository;
         this.professionalRepository = professionalRepository;
+        this.emailService = emailService;
     }
 
     public AnamnesisReferral createReferral(Long senderId, AnamnesisReferralRequestDTO request) {
@@ -84,6 +90,7 @@ public class AnamnesisReferralService{
         String selectedFieldsJson = new Gson().toJson(selectedData);
 
         AnamnesisReferral referral = new AnamnesisReferral();
+        anamnesis.setStatus('P');
         referral.setAnamnesis(anamnesis);
         referral.setProfessional(sender);
         referral.setAssistant(receiver); // Pode ser null
@@ -92,6 +99,7 @@ public class AnamnesisReferralService{
         return referralRepository.save(referral);
     }
 
+    @Transactional
     public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
         if (assistantId == null) {
             throw new IllegalArgumentException("Assistant ID não pode ser nulo");
@@ -104,6 +112,26 @@ public class AnamnesisReferralService{
                 .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
 
         referral.setAssistant(assistant);
-        return referralRepository.save(referral);
+        AnamnesisReferral savedReferral = referralRepository.save(referral);
+
+        // Envio de e-mail
+        if (assistant.getEmail() != null) {
+            String subject = "Nova Anamnese Encaminhada";
+            String body = String.format(
+                    "Olá %s,\n\nVocê foi vinculado a uma nova anamnese.\n" +
+                            "Por favor, acesse o sistema para visualizar os detalhes.\n\n" +
+                            "Atenciosamente,\nEquipe GerenciA",
+                    assistant.getName()
+            );
+
+            emailService.sendEmail(assistant.getEmail(), subject, body);
+        }
+
+        return savedReferral;
     }
+
+    public List<AnamnesisReferral> findAll(){
+        return referralRepository.findAll();
+    }
+
 }

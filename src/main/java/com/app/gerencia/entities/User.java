@@ -1,6 +1,7 @@
 package com.app.gerencia.entities;
 
 import com.app.gerencia.controllers.dto.LoginRequest;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -23,6 +24,7 @@ public class User {
     private String cpf;
 
     @Lob
+    @JsonIgnore
     private byte[] photo;
 
     private Date dateBirth;

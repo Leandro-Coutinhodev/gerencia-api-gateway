@@ -1,11 +1,10 @@
 package com.app.gerencia.controllers;
 
-import com.app.gerencia.controllers.dto.AnamnesisDTO;
-import com.app.gerencia.controllers.dto.AnamnesisReferralRequestDTO;
-import com.app.gerencia.controllers.dto.AnamnesisRequestDTO;
-import com.app.gerencia.controllers.dto.AnamnesisResponseDTO;
+import com.app.gerencia.controllers.dto.*;
 import com.app.gerencia.entities.Anamnesis;
+import com.app.gerencia.entities.AnamnesisReferral;
 import com.app.gerencia.entities.Patient;
+import com.app.gerencia.repository.AnamnesisReferralRepository;
 import com.app.gerencia.services.AnamnesisReferralService;
 import com.app.gerencia.services.AnamnesisService;
 import com.app.gerencia.services.AnamnesisTokenService;
@@ -41,15 +40,18 @@ public class AnamnesisController {
     private final PatientService patientService;
     private final AnamnesisTokenService anamnesisTokenService;
     private final AnamnesisReferralService referralService;
+    private final AnamnesisReferralRepository referralRepository;
 
     public AnamnesisController(AnamnesisService anamnesisService,
                                PatientService patientService,
                                AnamnesisTokenService anamnesisTokenService,
-                               AnamnesisReferralService referralService) {
+                               AnamnesisReferralService referralService,
+                               AnamnesisReferralRepository referralRepository) {
         this.anamnesisService = anamnesisService;
         this.patientService = patientService;
         this.anamnesisTokenService = anamnesisTokenService;
         this.referralService = referralService;
+        this.referralRepository = referralRepository;
     }
 
 
@@ -307,10 +309,10 @@ public class AnamnesisController {
     public ResponseEntity<?> assignAssistantToReferral(
             @PathVariable Long referralId,
             @RequestBody AssignAssistantRequestDTO request) {
-
         try {
             var updatedReferral = referralService.assignAssistant(referralId, request.assistantId());
-            return ResponseEntity.ok(updatedReferral);
+            var dto = AnamnesisReferralResponseDTO.fromEntity(updatedReferral);
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -318,7 +320,32 @@ public class AnamnesisController {
         }
     }
 
+
     // DTO para a requisição de atribuição
     public record AssignAssistantRequestDTO(Long assistantId) {}
+
+    @GetMapping("/anamnesis/{anamnesisId}/referral")
+    public ResponseEntity<?> getReferralByAnamnesis(@PathVariable Long anamnesisId) {
+        return referralRepository.findByAnamnesisId(anamnesisId)
+                .map(referral -> ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(referral)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/anamnesis/referral/findall")
+    public ResponseEntity<?> findAllReferral() {
+        try {
+            List<AnamnesisReferral> referrals = referralService.findAll();
+
+            List<AnamnesisReferralResponseDTO> response = referrals.stream()
+                    .map(AnamnesisReferralResponseDTO::fromEntity)
+                    .toList();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erro ao buscar encaminhamentos: " + e.getMessage());
+        }
+    }
+
+
 
 }

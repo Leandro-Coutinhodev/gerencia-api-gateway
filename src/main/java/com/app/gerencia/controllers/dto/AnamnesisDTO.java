@@ -73,6 +73,7 @@ public record AnamnesisDTO(
         return switch (status) {
             case 'E' -> "Encaminhada";
             case 'A' -> "Análise";
+            case 'P' -> "Pronto";
             default -> "Desconhecido";
         };
     }

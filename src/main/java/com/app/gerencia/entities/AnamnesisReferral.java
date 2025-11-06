@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "anamnesis_referral")
+@Table(name = "tb_anamnesis_referral")
 public class AnamnesisReferral {
 
     @Id
@@ -13,7 +13,7 @@ public class AnamnesisReferral {
     @Column(name = "anamnesis_referral_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anamnesis_id", nullable = false)
     private Anamnesis anamnesis;
 

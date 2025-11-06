@@ -1,6 +1,7 @@
 package com.app.gerencia.entities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -24,6 +25,7 @@ public class Anamnesis {
 
     @Lob
     @Column(name = "report")
+    @JsonIgnore
     private byte[] report;
 
     @Column(columnDefinition = "TEXT")
