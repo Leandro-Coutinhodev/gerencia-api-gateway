@@ -6,6 +6,7 @@ import java.util.Date;
 public record AnamnesisReferralResponseDTO(
         Long id,
         String patientName,
+        Long patientId,
         String assistantName,
         String guardianName,
         Long anamnesisId,
@@ -18,6 +19,7 @@ public record AnamnesisReferralResponseDTO(
         return new AnamnesisReferralResponseDTO(
                 referral.getId(),
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getName() : null,
+                referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getId() : null,
                 referral.getAssistant() != null ? referral.getAssistant().getName() : null,
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getGuardian().getName() : null,
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getId() : null,

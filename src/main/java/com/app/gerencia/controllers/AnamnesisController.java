@@ -28,8 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -346,6 +345,53 @@ public class AnamnesisController {
         }
     }
 
+    @GetMapping("/anamnesis/referral/{patientId}")
+    public ResponseEntity<?> historySend(@PathVariable Long patientId){
+        try {
+
+            List<Anamnesis> anamneses = anamnesisService.findByPatient(patientId);
+
+            if (anamneses.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Nenhuma anamnese encontrada para o paciente de ID: " + patientId);
+            }
+
+
+            List<Long> anamnesisIds = anamneses.stream()
+                    .map(Anamnesis::getId)
+                    .collect(Collectors.toList());
+
+
+            List<AnamnesisReferral> referrals = referralRepository.findByAnamnesisIdIn(anamnesisIds);
+
+            if (referrals.isEmpty()) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+
+            List<Map<String, Object>> response = referrals.stream().map(ref -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("referralId", ref.getId());
+                map.put("sentAt", ref.getSentAt());
+                map.put("patientName", ref.getAnamnesis().getPatient().getName());
+                map.put("guardianName", ref.getAnamnesis().getPatient().getGuardian().getName());
+                map.put("assistantName",
+                        ref.getAssistant() != null ? ref.getAssistant().getName() : "Ainda não vinculado");
+                map.put("professionalName",
+                        ref.getProfessional() != null ? ref.getProfessional().getName() : "Desconhecido");
+                map.put("anamnesisId", ref.getAnamnesis().getId());
+                return map;
+            }).collect(Collectors.toList());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao buscar histórico de encaminhamentos: " + e.getMessage());
+        }
+
+    }
 
 
 }

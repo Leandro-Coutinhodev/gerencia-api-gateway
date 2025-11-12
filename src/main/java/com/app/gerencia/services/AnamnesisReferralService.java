@@ -1,14 +1,12 @@
 package com.app.gerencia.services;
 
 import com.app.gerencia.controllers.dto.AnamnesisReferralRequestDTO;
-import com.app.gerencia.entities.Anamnesis;
-import com.app.gerencia.entities.AnamnesisReferral;
-import com.app.gerencia.entities.Assistant;
-import com.app.gerencia.entities.Professional;
+import com.app.gerencia.entities.*;
 import com.app.gerencia.repository.AnamnesisReferralRepository;
 import com.app.gerencia.repository.AnamnesisRepository;
 import com.app.gerencia.repository.AssistantRepository;
 import com.app.gerencia.repository.ProfessionalRepository;
+import com.app.gerencia.utils.PdfGenerator;
 import com.nimbusds.jose.shaded.gson.Gson;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,6 +97,37 @@ public class AnamnesisReferralService{
         return referralRepository.save(referral);
     }
 
+//    @Transactional
+//    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
+//        if (assistantId == null) {
+//            throw new IllegalArgumentException("Assistant ID não pode ser nulo");
+//        }
+//
+//        AnamnesisReferral referral = referralRepository.findById(referralId)
+//                .orElseThrow(() -> new RuntimeException("Encaminhamento não encontrado com ID: " + referralId));
+//
+//        Assistant assistant = assistantRepository.findById(assistantId)
+//                .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
+//
+//        referral.setAssistant(assistant);
+//        AnamnesisReferral savedReferral = referralRepository.save(referral);
+//
+//        // Envio de e-mail
+//        if (assistant.getEmail() != null) {
+//            String subject = "Nova Anamnese Encaminhada";
+//            String body = String.format(
+//                    "Olá %s,\n\nVocê foi vinculado a uma nova anamnese.\n" +
+//                            "Por favor, acesse o sistema para visualizar os detalhes.\n\n" +
+//                            "Atenciosamente,\nEquipe GerenciA",
+//                    assistant.getName()
+//            );
+//
+//            emailService.sendEmail(assistant.getEmail(), subject, body);
+//        }
+//
+//        return savedReferral;
+//    }
+
     @Transactional
     public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
         if (assistantId == null) {
@@ -114,24 +143,52 @@ public class AnamnesisReferralService{
         referral.setAssistant(assistant);
         AnamnesisReferral savedReferral = referralRepository.save(referral);
 
-        // Envio de e-mail
+        // Obtém informações do paciente e laudo
+        Anamnesis anamnesis = referral.getAnamnesis();
+        Patient patient = anamnesis.getPatient();
+        byte[] reportBytes = anamnesis.getReport();
+
+        // Gera o PDF com os campos selecionados + laudo + dados do paciente
+        byte[] pdfBytes = PdfGenerator.generateReferralPdf(
+                referral.getSelectedFieldsJson(),
+                patient.getName(),
+                patient.getCpf(),
+                referral.getSentAt(),
+                reportBytes
+        );
+
+        // Envia e-mail com o PDF anexado
         if (assistant.getEmail() != null) {
             String subject = "Nova Anamnese Encaminhada";
+
             String body = String.format(
-                    "Olá %s,\n\nVocê foi vinculado a uma nova anamnese.\n" +
-                            "Por favor, acesse o sistema para visualizar os detalhes.\n\n" +
+                    "Olá %s,\n\n" +
+                            "Você foi vinculado(a) a uma nova anamnese referente ao(a) paciente %s.\n\n" +
+                            "O relatório em anexo contém as informações selecionadas pelo profissional, bem como o laudo do paciente.\n\n" +
+                            "Data do encaminhamento: %s\n\n" +
                             "Atenciosamente,\nEquipe GerenciA",
-                    assistant.getName()
+                    assistant.getName(),
+                    patient.getName(),
+                    referral.getSentAt() != null
+                            ? referral.getSentAt().toString()
+                            : "Data não informada"
             );
 
-            emailService.sendEmail(assistant.getEmail(), subject, body);
+            emailService.sendEmailWithAttachment(
+                    assistant.getEmail(),
+                    subject,
+                    body,
+                    pdfBytes,
+                    "relatorio-anamnese-" + referral.getId() + ".pdf"
+            );
         }
 
         return savedReferral;
     }
 
+
     public List<AnamnesisReferral> findAll(){
-        return referralRepository.findAll();
+        return referralRepository.findAllByAssistantIdIsNotNull().get();
     }
 
 }
