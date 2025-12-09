@@ -191,4 +191,8 @@ public class AnamnesisReferralService{
         return referralRepository.findAllByAssistantIdIsNotNull().get();
     }
 
+    public AnamnesisReferral findById(Long id){
+        return referralRepository.findById(id).get();
+    }
+
 }

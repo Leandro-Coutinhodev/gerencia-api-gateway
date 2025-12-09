@@ -338,7 +338,6 @@ public class AnamnesisController {
             List<AnamnesisReferralResponseDTO> response = referrals.stream()
                     .map(AnamnesisReferralResponseDTO::fromEntity)
                     .toList();
-
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Erro ao buscar encaminhamentos: " + e.getMessage());
@@ -391,6 +390,16 @@ public class AnamnesisController {
                     .body("Erro ao buscar histórico de encaminhamentos: " + e.getMessage());
         }
 
+    }
+
+    @GetMapping("/anamnesis/referral/findById/{id}")
+    public ResponseEntity<?> findReferralById(@PathVariable Long id){
+        try{
+            AnamnesisReferral ar = referralService.findById(id);
+            return ResponseEntity.ok(ar);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 
