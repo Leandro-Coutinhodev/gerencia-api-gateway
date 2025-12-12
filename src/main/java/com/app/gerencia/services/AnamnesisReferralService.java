@@ -16,6 +16,7 @@ import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AnamnesisReferralService{
@@ -129,7 +130,7 @@ public class AnamnesisReferralService{
 //    }
 
     @Transactional
-    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
+    public AnamnesisReferral assignAssistantEmail(Long referralId, Long assistantId) {
         if (assistantId == null) {
             throw new IllegalArgumentException("Assistant ID não pode ser nulo");
         }
@@ -185,6 +186,24 @@ public class AnamnesisReferralService{
 
         return savedReferral;
     }
+    @Transactional
+    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
+        if (assistantId == null) {
+            throw new IllegalArgumentException("Assistant ID não pode ser nulo");
+        }
+
+        AnamnesisReferral referral = referralRepository.findById(referralId)
+                .orElseThrow(() -> new RuntimeException("Encaminhamento não encontrado com ID: " + referralId));
+
+        Assistant assistant = assistantRepository.findById(assistantId)
+                .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
+
+        referral.setAssistant(assistant);
+        AnamnesisReferral savedReferral = referralRepository.save(referral);
+
+        return savedReferral;
+    }
+
 
 
     public List<AnamnesisReferral> findAll(){
@@ -193,6 +212,9 @@ public class AnamnesisReferralService{
 
     public AnamnesisReferral findById(Long id){
         return referralRepository.findById(id).get();
+    }
+    public List<AnamnesisReferral> findByAssistantId(Long id){
+        return referralRepository.findAllByAssistantIdIsNotNullAndAssistantId(id);
     }
 
 }

@@ -225,7 +225,7 @@ public class AnamnesisController {
 
         String token = anamnesisTokenService.generateToken(patient.getId(), saved.getId());
 
-        String link = "http://localhost:3000/formulario?token=" + token;
+        String link = "http://72.62.12.212:3000/formulario?token=" + token;
 
         return ResponseEntity.ok(link);
     }
@@ -318,6 +318,21 @@ public class AnamnesisController {
                     .body("Erro ao atribuir assistente: " + e.getMessage());
         }
     }
+    @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
+    @PutMapping("/anamnesis/referral/{referralId}/assign-assistant/mail")
+    public ResponseEntity<?> assignAssistantToReferralEmail(
+            @PathVariable Long referralId,
+            @RequestBody AssignAssistantRequestDTO request) {
+        try {
+            var updatedReferral = referralService.assignAssistantEmail(referralId, request.assistantId());
+            var dto = AnamnesisReferralResponseDTO.fromEntity(updatedReferral);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao atribuir assistente: " + e.getMessage());
+        }
+    }
 
 
     // DTO para a requisição de atribuição
@@ -330,10 +345,10 @@ public class AnamnesisController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/anamnesis/referral/findall")
-    public ResponseEntity<?> findAllReferral() {
+    @GetMapping("/anamnesis/referral/findByAssistant/{assistantId}")
+    public ResponseEntity<?> findAllReferral(@PathVariable Long assistantId) {
         try {
-            List<AnamnesisReferral> referrals = referralService.findAll();
+            List<AnamnesisReferral> referrals = referralService.findByAssistantId(assistantId);
 
             List<AnamnesisReferralResponseDTO> response = referrals.stream()
                     .map(AnamnesisReferralResponseDTO::fromEntity)
@@ -397,6 +412,16 @@ public class AnamnesisController {
         try{
             AnamnesisReferral ar = referralService.findById(id);
             return ResponseEntity.ok(ar);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/anamnesis/referral/findall")
+    public ResponseEntity<?> listReferral(){
+        try{
+            List<AnamnesisReferral> referrals = referralService.findAll();
+            return ResponseEntity.ok(referrals);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }

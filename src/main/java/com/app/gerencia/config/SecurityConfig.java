@@ -49,6 +49,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/user/*/photo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/form/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/report").permitAll()
+                        .requestMatchers(
+                                "/api-gateway/gerencia/anamnesis/form/**",
+                                "/api-gateway/gerencia/anamnesis/*/response"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable())
                 .oauth2ResourceServer(oauth2 -> oauth2

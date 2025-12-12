@@ -15,7 +15,7 @@ public record AnamnesisResponseDTO(
         String link
 ) {
     public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis, String token) {
-        String link = "http://localhost:3000/form-anamnese/" + token;
+        String link = "http://72.62.12.212:3000/form-anamnese/" + token;
 
         return new AnamnesisResponseDTO(
                 anamnesis.getId(),
@@ -31,7 +31,7 @@ public record AnamnesisResponseDTO(
 
     private static String mapStatus(Character status) {
         return switch (status) {
-            case 'E' -> "Encaminhado";
+            case 'E' -> "Encaminhada";
             case 'A' -> "Em Análise";
             case 'P' -> "Pronto";
             default -> "Desconhecido";

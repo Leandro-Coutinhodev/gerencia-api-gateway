@@ -98,6 +98,17 @@ public class PatientController {
         }
     }
 
+    @GetMapping("/patient/guardian/{guardianId}")
+    public ResponseEntity<List<Patient>> searchByGuardian(@PathVariable Long guardianId) {
+        try {
+            List<Patient> patients = patientService.searchByGuardian(guardianId);
+            return ResponseEntity.ok(patients);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @DeleteMapping("/patient/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id){
 

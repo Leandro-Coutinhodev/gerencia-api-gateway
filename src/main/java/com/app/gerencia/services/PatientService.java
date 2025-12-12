@@ -109,4 +109,9 @@ public class PatientService {
 
         return "Excluído com sucesso!";
     }
+
+    public List<Patient> searchByGuardian(Long id){
+
+        return patientRepository.findByGuardianId(id);
+    }
 }
