@@ -98,33 +98,34 @@
 
 	</dependencies>
 
-	<build>
-		<plugins>
-<!--			<plugin>-->
-<!--				<groupId>org.apache.maven.plugins</groupId>-->
-<!--				<artifactId>maven-compiler-plugin</artifactId>-->
-<!--				<configuration>-->
-<!--					<annotationProcessorPaths>-->
-<!--						<path>-->
-<!--							<groupId>org.projectlombok</groupId>-->
-<!--							<artifactId>lombok</artifactId>-->
-<!--						</path>-->
-<!--					</annotationProcessorPaths>-->
-<!--				</configuration>-->
-<!--			</plugin>-->
-<!--			<plugin>-->
-<!--				<groupId>org.springframework.boot</groupId>-->
-<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
-<!--&lt;!&ndash;				<configuration>&ndash;&gt;-->
-<!--&lt;!&ndash;					<excludes>&ndash;&gt;-->
-<!--&lt;!&ndash;						<exclude>&ndash;&gt;-->
-<!--&lt;!&ndash;							<groupId>org.projectlombok</groupId>&ndash;&gt;-->
-<!--&lt;!&ndash;							<artifactId>lombok</artifactId>&ndash;&gt;-->
-<!--&lt;!&ndash;						</exclude>&ndash;&gt;-->
-<!--&lt;!&ndash;					</excludes>&ndash;&gt;-->
-<!--&lt;!&ndash;				</configuration>&ndash;&gt;-->
-<!--			</plugin>-->
-		</plugins>
-	</build>
+    <build>
+        <plugins>
+
+            <!-- Plugin necessário para gerar o FAT JAR do Spring Boot -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Compiler plugin opcional (se usar lombok, pode configurar aqui) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
 
 </project>
