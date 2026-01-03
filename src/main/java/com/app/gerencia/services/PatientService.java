@@ -4,6 +4,7 @@ import com.app.gerencia.entities.Guardian;
 import com.app.gerencia.entities.Patient;
 import com.app.gerencia.repository.GuardianRepository;
 import com.app.gerencia.repository.PatientRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -56,51 +57,32 @@ public class PatientService {
         return patientRepository.findAll();
     }
 
-    public String update(Patient patient, Long id){
-        Patient existing = patientRepository.findById(id)
+    @Transactional
+    public String update(Patient patient, Long id) {
+        // Buscar paciente existente
+        Patient existingPatient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
 
-        // Atualiza dados do paciente
-        existing.setName(patient.getName());
-        existing.setCpf(patient.getCpf());
-        existing.setDateBirth(patient.getDateBirth());
-        existing.setKinship(patient.getKinship());
+        // Atualizar campos
+        existingPatient.setName(patient.getName());
+        existingPatient.setCpf(patient.getCpf());
+        existingPatient.setDateBirth(patient.getDateBirth());
+        existingPatient.setKinship(patient.getKinship());
 
-        // Atualiza ou cadastra o responsável
+        // Atualizar guardian
         if (patient.getGuardian() != null) {
-            Guardian guardianData = patient.getGuardian();
-
-            Guardian guardian;
-            System.out.println("ENCONTRADO!  " + guardianData.getId());
-            if (guardianData.getId() != null) {
-                guardian = guardianRepository.findById(guardianData.getId())
-                        .orElseThrow(() -> new RuntimeException("Responsável não encontrado"));
-                guardian.setName(guardianData.getName());
-                guardian.setCpf(guardianData.getCpf());
-                guardian.setEmail(guardianData.getEmail());
-                guardian.setPhoneNumber1(guardianData.getPhoneNumber1());
-                guardian.setPhoneNumber2(guardianData.getPhoneNumber2());
-                guardian.setAddressLine1(guardianData.getAddressLine1());
-                guardian.setDateBirth(guardianData.getDateBirth());
-                guardian.setCep(guardianData.getCep());
-                guardian.setState(guardianData.getState());
-                guardian.setCity(guardianData.getCity());
-                guardian.setNumber(guardianData.getNumber());
-                guardian.setNeighborhood(guardianData.getNeighborhood());
-                guardian.setAddressLine2(guardianData.getAddressLine2());
-
-                guardian = guardianRepository.save(guardian);
-            } else {
-                System.out.println("ENCONTRADO");
-                guardian = guardianRepository.save(guardianData);
-            }
-
-            existing.setGuardian(guardian);
+            existingPatient.setGuardian(patient.getGuardian());
         }
 
-        patientRepository.save(existing);
+        // Atualizar foto SOMENTE se vier uma nova
+        if (patient.getPhoto() != null && patient.getPhoto().length > 0) {
+            existingPatient.setPhoto(patient.getPhoto());
+        }
+        // Se não vier foto nova, mantém a existente
 
-        return "Atualizado com sucesso!";
+        patientRepository.save(existingPatient);
+
+        return "Paciente atualizado com sucesso!";
     }
 
     public String delete(Long id){
@@ -113,5 +95,18 @@ public class PatientService {
     public List<Patient> searchByGuardian(Long id){
 
         return patientRepository.findByGuardianId(id);
+    }
+    public List<Patient> searchByNameOrCpf(String query) {
+        // Remove formatação do CPF se necessário
+        String cleanQuery = query.replaceAll("[^0-9]", "");
+
+        // Busca por nome (case-insensitive) ou CPF
+        if (cleanQuery.length() >= 3) {
+            // Se tem números, busca por nome E CPF
+            return patientRepository.findByNameContainingIgnoreCaseOrCpfContaining(query, query);
+        } else {
+            // Se não tem números suficientes, busca apenas por nome
+            return patientRepository.findByNameContainingIgnoreCase(query);
+        }
     }
 }

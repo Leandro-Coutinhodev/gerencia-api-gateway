@@ -43,22 +43,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/user/*/photo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/form/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/report").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/guardian/").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/patient").permitAll()
                         .requestMatchers(
                                 "/api-gateway/gerencia/anamnesis/form/**",
                                 "/api-gateway/gerencia/anamnesis/*/response"
                         ).permitAll()
-                        .anyRequest().authenticated())
-                .csrf(csrf -> csrf.disable())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                ) // ← FECHE AQUI o parêntese do oauth2ResourceServer
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 ->
+                        oauth2.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
+                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
+
         return http.build();
     }
 
@@ -77,9 +86,24 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://72.62.12.212",
+                "https://72.62.12.212",
+                "http://gerencialp.cloud",
+                "https://gerencialp.cloud",
+                "http://*.gerencialp.cloud",
+                "https://*.gerencialp.cloud"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

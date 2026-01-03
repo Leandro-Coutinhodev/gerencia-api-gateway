@@ -1,31 +1,47 @@
 package com.app.gerencia.services;
 
-import org.springframework.security.oauth2.jwt.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class AnamnesisTokenService {
 
-    private final JwtEncoder encoder;
-    private final JwtDecoder decoder;
-
-    public AnamnesisTokenService(JwtEncoder encoder, JwtDecoder decoder) {
-        this.encoder = encoder;
-        this.decoder = decoder;
-    }
+    @Autowired
+    @Qualifier("anamnesisSecretKey")
+    private SecretKey secretKey;
 
     public String generateToken(Long patientId, Long anamnesisId) {
-        var claims = JwtClaimsSet.builder()
-                .claim("patientId", patientId)
-                .claim("anamnesisId", anamnesisId)
-                .build();
-
-        return this.encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        return Jwts.builder()
+                .claim("p", patientId)
+                .claim("a", anamnesisId)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 
-    public Jwt decodeToken(String token) {
-        return this.decoder.decode(token);
+    public Long getPatientId(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("p", Long.class);
+    }
+
+    public Long getAnamnesisId(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("a", Long.class);
     }
 }

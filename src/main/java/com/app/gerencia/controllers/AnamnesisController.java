@@ -12,6 +12,7 @@ import com.app.gerencia.services.PatientService;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,6 +41,9 @@ public class AnamnesisController {
     private final AnamnesisTokenService anamnesisTokenService;
     private final AnamnesisReferralService referralService;
     private final AnamnesisReferralRepository referralRepository;
+
+    @Value("${link.host}")
+    private String host;
 
     public AnamnesisController(AnamnesisService anamnesisService,
                                PatientService patientService,
@@ -120,7 +124,7 @@ public class AnamnesisController {
                         .map(anamnesis -> {
                             // Gera o token para cada anamnese, igual no método create
                             String token = anamnesisTokenService.generateToken(patient.getId(), anamnesis.getId());
-                            return new AnamnesisDTO(anamnesis, token);
+                            return new AnamnesisDTO(anamnesis, token, host);
                         })
                         .toList()
         );
@@ -147,36 +151,32 @@ public class AnamnesisController {
     @GetMapping("/anamnesis/form/{token}")
     public ResponseEntity<AnamnesisDTO> getFormData(@PathVariable String token) {
         try {
-            var jwt = anamnesisTokenService.decodeToken(token);
-
-            // 🔑 Recupera os claims como Object e converte para Long
-            Object patientClaim = jwt.getClaims().get("patientId");
-            Long patientId = patientClaim instanceof Number
-                    ? ((Number) patientClaim).longValue()
-                    : Long.valueOf(patientClaim.toString());
-
-            Object anamnesisClaim = jwt.getClaims().get("anamnesisId");
-            Long anamnesisId = anamnesisClaim instanceof Number
-                    ? ((Number) anamnesisClaim).longValue()
-                    : Long.valueOf(anamnesisClaim.toString());
+            // Decodifica token usando métodos do service
+            Long patientId = anamnesisTokenService.getPatientId(token);
+            Long anamnesisId = anamnesisTokenService.getAnamnesisId(token);
 
             // Busca dados no banco
             Patient patient = patientService.findById(patientId);
             Anamnesis anamnesis = anamnesisService.findById(anamnesisId);
 
+            // Validações
             if (patient == null || anamnesis == null) {
                 return ResponseEntity.notFound().build();
             }
+
             if (!anamnesis.getPatient().getId().equals(patientId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            // Retorna DTO com o token incluso no link
-            return ResponseEntity.ok(new AnamnesisDTO(anamnesis, token));
+            // Retorna dados
+            return ResponseEntity.ok(new AnamnesisDTO(anamnesis, token, host));
 
+        } catch (io.jsonwebtoken.JwtException e) {
+            // Token inválido
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -194,7 +194,7 @@ public class AnamnesisController {
                             a.getPatient().getId(),
                             a.getId()
                     );
-                    return AnamnesisResponseDTO.fromEntity(a, token);
+                    return AnamnesisResponseDTO.fromEntity(a, token, host);
                 })
                 .toList();
 
@@ -225,7 +225,7 @@ public class AnamnesisController {
 
         String token = anamnesisTokenService.generateToken(patient.getId(), saved.getId());
 
-        String link = "http://72.62.12.212:3000/formulario?token=" + token;
+        String link = host + "/formulario?token=" + token;
 
         return ResponseEntity.ok(link);
     }

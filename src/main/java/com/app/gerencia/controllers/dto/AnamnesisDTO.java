@@ -1,6 +1,7 @@
 package com.app.gerencia.controllers.dto;
 
 import com.app.gerencia.entities.Anamnesis;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Base64;
 import java.util.Date;
@@ -25,7 +26,7 @@ public record AnamnesisDTO(
         String status,
         String link
 ) {
-    public AnamnesisDTO(Anamnesis anamnesis, String token) {
+    public AnamnesisDTO(Anamnesis anamnesis, String token, String host) {
         this(
                 anamnesis.getId(),
                 anamnesis.getPatient() != null ? anamnesis.getPatient().getId() : null,
@@ -44,7 +45,7 @@ public record AnamnesisDTO(
                 anamnesis.getTherapists(),
                 anamnesis.getReport() != null ? Base64.getEncoder().encodeToString(anamnesis.getReport()) : null,
                 mapStatus(anamnesis.getStatus()),
-                "http://72.62.12.212:3000/form-anamnese/" + token  // Link gerado diretamente aqui
+                host + "/form-anamnese/" + token  // Link gerado diretamente aqui
         );
     }
     public AnamnesisDTO(Anamnesis anamnesis) {
@@ -77,4 +78,6 @@ public record AnamnesisDTO(
             default -> "Desconhecido";
         };
     }
+
+
 }

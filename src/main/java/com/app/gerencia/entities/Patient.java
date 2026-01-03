@@ -24,8 +24,8 @@ public class Patient {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date dateBirth;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY )
-    @JoinColumn(name = "guardian_id")
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id", nullable = true)
     private Guardian guardian;
 
     @Lob

@@ -82,7 +82,7 @@ public class SecretaryController {
     }
 
     @GetMapping("/secretary")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_SECRETARY')")
     public ResponseEntity<List<Secretary>> findAll(){
 
         try {

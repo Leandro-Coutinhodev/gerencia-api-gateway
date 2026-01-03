@@ -14,8 +14,8 @@ public record AnamnesisResponseDTO(
         String status,
         String link
 ) {
-    public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis, String token) {
-        String link = "http://72.62.12.212:3000/form-anamnese/" + token;
+    public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis, String token, String host) {
+        String link = host + "/form-anamnese/" + token;
 
         return new AnamnesisResponseDTO(
                 anamnesis.getId(),
