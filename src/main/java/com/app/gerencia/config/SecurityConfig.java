@@ -53,6 +53,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/report").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/guardian/").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/patient").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/contract/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/contract/*/accept").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/contract/*/pdf").permitAll()
                         .requestMatchers(
                                 "/api-gateway/gerencia/anamnesis/form/**",
                                 "/api-gateway/gerencia/anamnesis/*/response"
@@ -88,6 +91,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:5678",
                 "http://localhost:3000",
                 "https://localhost:3000",
                 "http://72.62.12.212",
