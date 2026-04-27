@@ -11,7 +11,7 @@ public record AnamnesisReferralResponseDTO(
         String guardianName,
         Long anamnesisId,
         Long assistantId,
-        Long professionalId,
+        Long senderId,
         String selectedFieldsJson,
         Date sentAt
 ) {
@@ -24,7 +24,7 @@ public record AnamnesisReferralResponseDTO(
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getGuardian().getName() : null,
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getId() : null,
                 referral.getAssistant() != null ? referral.getAssistant().getId() : null,
-                referral.getProfessional() != null ? referral.getProfessional().getId() : null,
+                referral.getSender() != null ? referral.getSender().getId() : null,
                 referral.getSelectedFieldsJson(),
                 referral.getSentAt()
         );

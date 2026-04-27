@@ -1,7 +1,9 @@
 package com.app.gerencia.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -16,8 +18,17 @@ public class Anamnesis {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonBackReference
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
+
+    @OneToOne(
+            mappedBy = "anamnesis",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonManagedReference
+    private AnamnesisReferral referral;
 
     @Column(name = "interview_date", nullable = false)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
@@ -193,5 +204,14 @@ public class Anamnesis {
 
     public void setTherapists(String therapists) {
         this.therapists = therapists;
+    }
+
+    public AnamnesisReferral getReferral() {
+
+        return referral;
+    }
+
+    public void setReferral(AnamnesisReferral referral) {
+        this.referral = referral;
     }
 }

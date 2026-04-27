@@ -259,7 +259,7 @@ public class AnamnesisController {
                 .body(anamnesis.getReport());
     }
 
-    @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
     @PostMapping("/anamnesis/referral")
     public ResponseEntity<?> sendReferral(@RequestBody AnamnesisReferralRequestDTO request) {
 
@@ -303,7 +303,7 @@ public class AnamnesisController {
         }
     }
 
-    @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
     @PutMapping("/anamnesis/referral/{referralId}/assign-assistant")
     public ResponseEntity<?> assignAssistantToReferral(
             @PathVariable Long referralId,
@@ -318,7 +318,7 @@ public class AnamnesisController {
                     .body("Erro ao atribuir assistente: " + e.getMessage());
         }
     }
-    @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
     @PutMapping("/anamnesis/referral/{referralId}/assign-assistant/mail")
     public ResponseEntity<?> assignAssistantToReferralEmail(
             @PathVariable Long referralId,
@@ -391,8 +391,8 @@ public class AnamnesisController {
                 map.put("guardianName", ref.getAnamnesis().getPatient().getGuardian().getName());
                 map.put("assistantName",
                         ref.getAssistant() != null ? ref.getAssistant().getName() : "Ainda não vinculado");
-                map.put("professionalName",
-                        ref.getProfessional() != null ? ref.getProfessional().getName() : "Desconhecido");
+                map.put("senderName",
+                        ref.getSender() != null ? ref.getSender().getName() : "Desconhecido");
                 map.put("anamnesisId", ref.getAnamnesis().getId());
                 return map;
             }).collect(Collectors.toList());

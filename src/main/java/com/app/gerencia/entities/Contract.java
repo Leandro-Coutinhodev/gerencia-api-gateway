@@ -1,6 +1,8 @@
 package com.app.gerencia.entities;
 
 import com.app.gerencia.enums.ContractStatus;
+import com.app.gerencia.enums.ContractType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -29,11 +31,12 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     private ContractStatus status;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guardian_id")
     private Guardian guardian;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonBackReference
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
@@ -43,6 +46,59 @@ public class Contract {
 
     @Column(unique = true)
     private String hash;
+
+    @Enumerated(EnumType.STRING)
+    private ContractType type;
+
+    private Boolean hasWitnesses;
+
+    @Lob
+    @Column(name = "pdf_data")
+    private byte[] pdfData;
+
+    private String pdfFileName;
+
+    private String pdfContentType;
+
+    public byte[] getPdfData() {
+        return pdfData;
+    }
+
+    public void setPdfData(byte[] pdfData) {
+        this.pdfData = pdfData;
+    }
+
+    public String getPdfFileName() {
+        return pdfFileName;
+    }
+
+    public void setPdfFileName(String pdfFileName) {
+        this.pdfFileName = pdfFileName;
+    }
+
+    public String getPdfContentType() {
+        return pdfContentType;
+    }
+
+    public void setPdfContentType(String pdfContentType) {
+        this.pdfContentType = pdfContentType;
+    }
+
+    public ContractType getType() {
+        return type;
+    }
+
+    public void setType(ContractType type) {
+        this.type = type;
+    }
+
+    public Boolean getHasWitnesses() {
+        return hasWitnesses;
+    }
+
+    public void setHasWitnesses(Boolean hasWitnesses) {
+        this.hasWitnesses = hasWitnesses;
+    }
 
     public String getPdfPath() {
         return pdfPath;
@@ -139,4 +195,6 @@ public class Contract {
     public void setParticipants(List<ContractParticipant> participants) {
         this.participants = participants;
     }
+
+
 }

@@ -6,6 +6,10 @@ public class CreateContractRequest {
 
     private Long guardianId;
     private Long patientId;
+
+    private Boolean uploaded;      // se é upload
+    private Boolean hasWitnesses;  // se terá testemunhas
+
     private List<WitnessRequest> witnesses;
 
     public Long getGuardianId() {
@@ -22,6 +26,22 @@ public class CreateContractRequest {
 
     public void setPatientId(Long patientId) {
         this.patientId = patientId;
+    }
+
+    public Boolean getUploaded() {
+        return uploaded;
+    }
+
+    public void setUploaded(Boolean uploaded) {
+        this.uploaded = uploaded;
+    }
+
+    public Boolean getHasWitnesses() {
+        return hasWitnesses;
+    }
+
+    public void setHasWitnesses(Boolean hasWitnesses) {
+        this.hasWitnesses = hasWitnesses;
     }
 
     public List<WitnessRequest> getWitnesses() {

@@ -2,10 +2,7 @@ package com.app.gerencia.services;
 
 import com.app.gerencia.controllers.dto.AnamnesisReferralRequestDTO;
 import com.app.gerencia.entities.*;
-import com.app.gerencia.repository.AnamnesisReferralRepository;
-import com.app.gerencia.repository.AnamnesisRepository;
-import com.app.gerencia.repository.AssistantRepository;
-import com.app.gerencia.repository.ProfessionalRepository;
+import com.app.gerencia.repository.*;
 import com.app.gerencia.utils.PdfGenerator;
 import com.nimbusds.jose.shaded.gson.Gson;
 import org.springframework.stereotype.Service;
@@ -27,19 +24,19 @@ public class AnamnesisReferralService{
 
     private final AssistantRepository assistantRepository;
 
-    private final ProfessionalRepository professionalRepository;
+    private final UserRepository userRepository;
 
     private final EmailService emailService;
 
     public AnamnesisReferralService(AnamnesisReferralRepository anamnesisReferralRepository,
                                     AnamnesisRepository anamnesisRepository,
                                     AssistantRepository assistantRepository,
-                                    ProfessionalRepository professionalRepository,
+                                    UserRepository userRepository,
                                     EmailService emailService){
         referralRepository = anamnesisReferralRepository;
         this.anamnesisRepository = anamnesisRepository;
         this.assistantRepository = assistantRepository;
-        this.professionalRepository = professionalRepository;
+        this.userRepository = userRepository;
         this.emailService = emailService;
     }
 
@@ -64,7 +61,7 @@ public class AnamnesisReferralService{
         Anamnesis anamnesis = anamnesisRepository.findById(request.anamnesisId())
                 .orElseThrow(() -> new RuntimeException("Anamnese não encontrada com ID: " + request.anamnesisId()));
 
-        Professional sender = professionalRepository.findById(senderId)
+        User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new RuntimeException("Profissional remetente não encontrado com ID: " + senderId));
 
         // Assistant é opcional - busca apenas se o ID foi fornecido
@@ -91,7 +88,7 @@ public class AnamnesisReferralService{
         AnamnesisReferral referral = new AnamnesisReferral();
         anamnesis.setStatus('P');
         referral.setAnamnesis(anamnesis);
-        referral.setProfessional(sender);
+        referral.setSender(sender);
         referral.setAssistant(receiver); // Pode ser null
         referral.setSelectedFieldsJson(selectedFieldsJson);
 

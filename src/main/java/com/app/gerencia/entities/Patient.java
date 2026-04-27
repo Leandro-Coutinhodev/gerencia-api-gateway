@@ -2,10 +2,12 @@ package com.app.gerencia.entities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_patient")
@@ -28,11 +30,19 @@ public class Patient {
     @JoinColumn(name = "guardian_id", nullable = true)
     private Guardian guardian;
 
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Contract> contracts;
+
     @Lob
     @JsonIgnore
     private byte[] photo;
 
     private String kinship;
+
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Anamnesis> anamneses;
 
     public String getKinship() {
         return kinship;
@@ -88,5 +98,21 @@ public class Patient {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public List<Anamnesis> getAnamneses() {
+        return anamneses;
+    }
+
+    public void setAnamneses(List<Anamnesis> anamneses) {
+        this.anamneses = anamneses;
+    }
+
+    public List<Contract> getContracts() {
+        return contracts;
+    }
+
+    public void setContracts(List<Contract> contracts) {
+        this.contracts = contracts;
     }
 }

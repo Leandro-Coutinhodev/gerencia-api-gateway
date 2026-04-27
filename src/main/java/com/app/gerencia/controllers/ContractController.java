@@ -18,6 +18,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
@@ -45,13 +46,34 @@ public class ContractController {
     @Autowired
     private ContractPdfService contractPdfService;
 
-    @PostMapping("/contract")
+//    @PostMapping("/contract")
+//    public ResponseEntity<?> create(
+//            @RequestBody CreateContractRequest request,
+//            HttpServletRequest httpRequest
+//    ) {
+//        Contract contract = contractService.createContract(
+//                request,
+//                IpUtils.getClientIp(httpRequest)
+//        );
+//
+//        return ResponseEntity
+//                .status(HttpStatus.CREATED)
+//                .body(contract.getId());
+//    }
+
+    @PostMapping(
+            value = "/contract",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<?> create(
-            @RequestBody CreateContractRequest request,
+            @RequestPart("data") CreateContractRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             HttpServletRequest httpRequest
     ) {
+
         Contract contract = contractService.createContract(
                 request,
+                file,
                 IpUtils.getClientIp(httpRequest)
         );
 

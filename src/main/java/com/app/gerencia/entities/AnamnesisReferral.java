@@ -1,5 +1,6 @@
 package com.app.gerencia.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -14,6 +15,7 @@ public class AnamnesisReferral {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
+    @JsonBackReference
     @JoinColumn(name = "anamnesis_id", nullable = false)
     private Anamnesis anamnesis;
 
@@ -22,8 +24,8 @@ public class AnamnesisReferral {
     private Assistant assistant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "professional_id", nullable = false)
-    private Professional professional;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User sender;
 
     @Column(columnDefinition = "TEXT", name = "selected_fields")
     private String selectedFieldsJson;
@@ -56,12 +58,12 @@ public class AnamnesisReferral {
         this.assistant = assistant;
     }
 
-    public Professional getProfessional() {
-        return professional;
+    public User getSender() {
+        return sender;
     }
 
-    public void setProfessional(Professional professional) {
-        this.professional = professional;
+    public void setSender(User sender) {
+        this.sender = sender;
     }
 
     public String getSelectedFieldsJson() {
