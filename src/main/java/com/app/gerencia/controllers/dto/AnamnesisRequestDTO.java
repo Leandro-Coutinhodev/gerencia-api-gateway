@@ -1,6 +1,6 @@
 package com.app.gerencia.controllers.dto;
 
 public record AnamnesisRequestDTO(
-        Long patientId
-) {
-}
+        Long patientId,
+        Long templateId
+) {}

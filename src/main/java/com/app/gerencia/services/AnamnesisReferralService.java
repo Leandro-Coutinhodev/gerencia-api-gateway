@@ -5,213 +5,184 @@ import com.app.gerencia.entities.*;
 import com.app.gerencia.repository.*;
 import com.app.gerencia.utils.PdfGenerator;
 import com.nimbusds.jose.shaded.gson.Gson;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
-import java.sql.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
-public class AnamnesisReferralService{
+public class AnamnesisReferralService {
 
     private final AnamnesisReferralRepository referralRepository;
-
     private final AnamnesisRepository anamnesisRepository;
-
+    private final AnamnesisAnswerRepository answerRepository;
     private final AssistantRepository assistantRepository;
-
     private final UserRepository userRepository;
-
     private final EmailService emailService;
 
-    public AnamnesisReferralService(AnamnesisReferralRepository anamnesisReferralRepository,
+    public AnamnesisReferralService(AnamnesisReferralRepository referralRepository,
                                     AnamnesisRepository anamnesisRepository,
+                                    AnamnesisAnswerRepository answerRepository,
                                     AssistantRepository assistantRepository,
                                     UserRepository userRepository,
-                                    EmailService emailService){
-        referralRepository = anamnesisReferralRepository;
+                                    EmailService emailService) {
+        this.referralRepository = referralRepository;
         this.anamnesisRepository = anamnesisRepository;
+        this.answerRepository = answerRepository;
         this.assistantRepository = assistantRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
     }
 
-    public AnamnesisReferral createReferral(Long senderId, AnamnesisReferralRequestDTO request) {
+    // ── Criação do encaminhamento ─────────────────────────────────────────────
 
-        // VALIDAÇÕES CRÍTICAS (apenas anamnesisId é obrigatório)
-        if (request.anamnesisId() == null) {
-            throw new IllegalArgumentException("Anamnesis ID não pode ser nulo");
-        }
+    @Transactional
+    public AnamnesisReferral createReferral(Long senderId,
+                                            AnamnesisReferralRequestDTO request) {
 
-        if (senderId == null) {
-            throw new IllegalArgumentException("Sender ID não pode ser nulo");
-        }
-
-        // DEBUG
-        System.out.println("=== DEBUG CREATE REFERRAL ===");
-        System.out.println("Sender ID: " + senderId);
-        System.out.println("Anamnesis ID: " + request.anamnesisId());
-        System.out.println("Assistant ID: " + request.assistantId());
-        System.out.println("Selected Fields: " + request.selectedFields());
+        if (request.anamnesisId() == null)
+            throw new IllegalArgumentException("anamnesisId não pode ser nulo");
+        if (senderId == null)
+            throw new IllegalArgumentException("senderId não pode ser nulo");
 
         Anamnesis anamnesis = anamnesisRepository.findById(request.anamnesisId())
-                .orElseThrow(() -> new RuntimeException("Anamnese não encontrada com ID: " + request.anamnesisId()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Anamnese não encontrada: " + request.anamnesisId()));
 
         User sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new RuntimeException("Profissional remetente não encontrado com ID: " + senderId));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Profissional remetente não encontrado: " + senderId));
 
-        // Assistant é opcional - busca apenas se o ID foi fornecido
         Assistant receiver = null;
         if (request.assistantId() != null) {
             receiver = assistantRepository.findById(request.assistantId())
-                    .orElseThrow(() -> new RuntimeException("Profissional destinatário não encontrado com ID: " + request.assistantId()));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Assistente não encontrado: " + request.assistantId()));
         }
 
-        // Monta o JSON com os campos selecionados
-        Map<String, Object> selectedData = new HashMap<>();
-        for (String field : request.selectedFields()) {
-            try {
-                Field f = Anamnesis.class.getDeclaredField(field);
-                f.setAccessible(true);
-                selectedData.put(field, f.get(anamnesis));
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException("Campo inválido: " + field);
-            }
-        }
+        // Busca apenas as respostas dos campos selecionados
+        List<AnamnesisAnswer> selectedAnswers = answerRepository
+                .findByAnamnesisId(anamnesis.getId())
+                .stream()
+                .filter(a -> request.selectedFieldIds().contains(a.getField().getId()))
+                .toList();
 
-        String selectedFieldsJson = new Gson().toJson(selectedData);
+        // Monta JSON: [{ "label": "...", "value": "...", "fieldType": "..." }]
+        String selectedFieldsJson = buildSelectedJson(selectedAnswers);
 
         AnamnesisReferral referral = new AnamnesisReferral();
-        anamnesis.setStatus('P');
         referral.setAnamnesis(anamnesis);
         referral.setSender(sender);
-        referral.setAssistant(receiver); // Pode ser null
+        referral.setAssistant(receiver);
         referral.setSelectedFieldsJson(selectedFieldsJson);
+        referral.setSentAt(new Date());
+
+        anamnesis.setStatus('P'); // Em análise
+        anamnesisRepository.save(anamnesis);
 
         return referralRepository.save(referral);
     }
 
-//    @Transactional
-//    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
-//        if (assistantId == null) {
-//            throw new IllegalArgumentException("Assistant ID não pode ser nulo");
-//        }
-//
-//        AnamnesisReferral referral = referralRepository.findById(referralId)
-//                .orElseThrow(() -> new RuntimeException("Encaminhamento não encontrado com ID: " + referralId));
-//
-//        Assistant assistant = assistantRepository.findById(assistantId)
-//                .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
-//
-//        referral.setAssistant(assistant);
-//        AnamnesisReferral savedReferral = referralRepository.save(referral);
-//
-//        // Envio de e-mail
-//        if (assistant.getEmail() != null) {
-//            String subject = "Nova Anamnese Encaminhada";
-//            String body = String.format(
-//                    "Olá %s,\n\nVocê foi vinculado a uma nova anamnese.\n" +
-//                            "Por favor, acesse o sistema para visualizar os detalhes.\n\n" +
-//                            "Atenciosamente,\nEquipe GerenciA",
-//                    assistant.getName()
-//            );
-//
-//            emailService.sendEmail(assistant.getEmail(), subject, body);
-//        }
-//
-//        return savedReferral;
-//    }
+    // ── Atribuição de assistente (sem e-mail) ─────────────────────────────────
+
+    @Transactional
+    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
+        AnamnesisReferral referral = findById(referralId);
+        Assistant assistant = assistantRepository.findById(assistantId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Assistente não encontrado: " + assistantId));
+        referral.setAssistant(assistant);
+        return referralRepository.save(referral);
+    }
+
+    // ── Atribuição de assistente (com e-mail + PDF) ───────────────────────────
 
     @Transactional
     public AnamnesisReferral assignAssistantEmail(Long referralId, Long assistantId) {
-        if (assistantId == null) {
-            throw new IllegalArgumentException("Assistant ID não pode ser nulo");
-        }
-
-        AnamnesisReferral referral = referralRepository.findById(referralId)
-                .orElseThrow(() -> new RuntimeException("Encaminhamento não encontrado com ID: " + referralId));
-
+        AnamnesisReferral referral = findById(referralId);
         Assistant assistant = assistantRepository.findById(assistantId)
-                .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Assistente não encontrado: " + assistantId));
 
         referral.setAssistant(assistant);
-        AnamnesisReferral savedReferral = referralRepository.save(referral);
+        AnamnesisReferral saved = referralRepository.save(referral);
 
-        // Obtém informações do paciente e laudo
-        Anamnesis anamnesis = referral.getAnamnesis();
-        Patient patient = anamnesis.getPatient();
-        byte[] reportBytes = anamnesis.getReport();
-
-        // Gera o PDF com os campos selecionados + laudo + dados do paciente
-        byte[] pdfBytes = PdfGenerator.generateReferralPdf(
-                referral.getSelectedFieldsJson(),
-                patient.getName(),
-                patient.getCpf(),
-                referral.getSentAt(),
-                reportBytes
-        );
-
-        // Envia e-mail com o PDF anexado
         if (assistant.getEmail() != null) {
-            String subject = "Nova Anamnese Encaminhada";
+            Patient patient = referral.getAnamnesis().getPatient();
 
+            byte[] pdfBytes = PdfGenerator.generateReferralPdf(
+                    referral.getSelectedFieldsJson(),
+                    patient.getName(),
+                    patient.getCpf(),
+                    referral.getSentAt(),
+                    null // report por campo agora: pode buscar se necessário
+            );
+
+            String subject = "Nova Anamnese Encaminhada";
             String body = String.format(
                     "Olá %s,\n\n" +
                             "Você foi vinculado(a) a uma nova anamnese referente ao(a) paciente %s.\n\n" +
-                            "O relatório em anexo contém as informações selecionadas pelo profissional, bem como o laudo do paciente.\n\n" +
+                            "O relatório em anexo contém as informações selecionadas.\n\n" +
                             "Data do encaminhamento: %s\n\n" +
                             "Atenciosamente,\nEquipe GerenciA",
                     assistant.getName(),
                     patient.getName(),
-                    referral.getSentAt() != null
-                            ? referral.getSentAt().toString()
-                            : "Data não informada"
+                    saved.getSentAt() != null ? saved.getSentAt().toString() : "—"
             );
 
             emailService.sendEmailWithAttachment(
-                    assistant.getEmail(),
-                    subject,
-                    body,
+                    assistant.getEmail(), subject, body,
                     pdfBytes,
-                    "relatorio-anamnese-" + referral.getId() + ".pdf"
+                    "relatorio-anamnese-" + saved.getId() + ".pdf"
             );
         }
 
-        return savedReferral;
-    }
-    @Transactional
-    public AnamnesisReferral assignAssistant(Long referralId, Long assistantId) {
-        if (assistantId == null) {
-            throw new IllegalArgumentException("Assistant ID não pode ser nulo");
-        }
-
-        AnamnesisReferral referral = referralRepository.findById(referralId)
-                .orElseThrow(() -> new RuntimeException("Encaminhamento não encontrado com ID: " + referralId));
-
-        Assistant assistant = assistantRepository.findById(assistantId)
-                .orElseThrow(() -> new RuntimeException("Assistente não encontrado com ID: " + assistantId));
-
-        referral.setAssistant(assistant);
-        AnamnesisReferral savedReferral = referralRepository.save(referral);
-
-        return savedReferral;
+        return saved;
     }
 
+    // ── Leitura ───────────────────────────────────────────────────────────────
 
-
-    public List<AnamnesisReferral> findAll(){
-        return referralRepository.findAllByAssistantIdIsNotNull().get();
+    public AnamnesisReferral findById(Long id) {
+        return referralRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Encaminhamento não encontrado: " + id));
     }
 
-    public AnamnesisReferral findById(Long id){
-        return referralRepository.findById(id).get();
+    public List<AnamnesisReferral> findAll() {
+        return referralRepository.findAllByAssistantIdIsNotNull()
+                .orElse(Collections.emptyList());
     }
-    public List<AnamnesisReferral> findByAssistantId(Long id){
+
+    public List<AnamnesisReferral> findByAssistantId(Long id) {
         return referralRepository.findAllByAssistantIdIsNotNullAndAssistantId(id);
     }
 
+    // ── Helper: monta JSON das respostas selecionadas ─────────────────────────
+
+    private String buildSelectedJson(List<AnamnesisAnswer> answers) {
+        // Formato: [{ label, value, fieldType }]
+        // Campos FILE são incluídos apenas como indicador (sem o binário)
+        var list = answers.stream()
+                .sorted(Comparator.comparingInt(a -> a.getField().getPosition()))
+                .map(a -> {
+                    Map<String, String> entry = new LinkedHashMap<>();
+                    entry.put("label", a.getField().getLabel());
+                    entry.put("fieldType", a.getField().getFieldType().name());
+
+                    if (a.getField().getFieldType() == AnamnesisTemplateField.FieldType.FILE) {
+                        entry.put("value", a.getFileData() != null
+                                ? "[Arquivo: " + a.getFileName() + "]"
+                                : "[Sem arquivo]");
+                    } else {
+                        entry.put("value", a.getValue() != null ? a.getValue() : "");
+                    }
+
+                    return entry;
+                })
+                .toList();
+
+        return new com.google.gson.Gson().toJson(list);
+    }
 }

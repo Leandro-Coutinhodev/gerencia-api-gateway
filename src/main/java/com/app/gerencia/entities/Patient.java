@@ -41,7 +41,7 @@ public class Patient {
     private String kinship;
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonIgnore
     private List<Anamnesis> anamneses;
 
     public String getKinship() {

@@ -4,7 +4,6 @@ import java.util.List;
 
 public record AnamnesisReferralRequestDTO(
         Long anamnesisId,
-        Long assistantId,
-        List<String> selectedFields
-) {
-}
+        Long assistantId,             // opcional
+        List<Long> selectedFieldIds
+) {}

@@ -32,7 +32,7 @@ public record AnamnesisResponseDTO(
     private static String mapStatus(Character status) {
         return switch (status) {
             case 'E' -> "Encaminhada";
-            case 'A' -> "Em Análise";
+            case 'A' -> "Análise";
             case 'P' -> "Pronto";
             default -> "Desconhecido";
         };

@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_anamnesis")
@@ -18,74 +20,27 @@ public class Anamnesis {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    @OneToOne(
-            mappedBy = "anamnesis",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    @JsonManagedReference
-    private AnamnesisReferral referral;
+    // ✅ Novo: referência ao template usado
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id", nullable = false)
+    private AnamnesisTemplate template;
 
-    @Column(name = "interview_date", nullable = false)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    // ✅ Novo: respostas dinâmicas
+    @OneToMany(mappedBy = "anamnesis", fetch = FetchType.LAZY)
+    private List<AnamnesisAnswer> answers = new ArrayList<>();
+
+    @Column(name = "interview_date")
     private Date interviewDate;
-
-    @Lob
-    @Column(name = "report")
-    @JsonIgnore
-    private byte[] report;
-
-    @Column(columnDefinition = "TEXT")
-    private String diagnoses; // e.g. autism, ADHD, etc
-
-    @Column(columnDefinition = "TEXT")
-    private String medicationAndAllergies;
-
-    @Column(columnDefinition = "TEXT")
-    private String indications;
-
-    @Column(columnDefinition = "TEXT")
-    private String objectives;
-
-    @Column(columnDefinition = "TEXT")
-    private String developmentHistory;
-
-    @Column(columnDefinition = "TEXT")
-    private String preferences;
-
-    @Column(columnDefinition = "TEXT")
-    private String interferingBehaviors;
-
-    @Column(columnDefinition = "TEXT")
-    private String qualityOfLife;
-
-    @Column(columnDefinition = "TEXT")
-    private String feeding;
-
-    @Column(columnDefinition = "TEXT")
-    private String sleep;
-
-    @Column(columnDefinition = "TEXT")
-    private String therapists;
-
-
 
     @Column(name = "status")
     private Character status = 'E';
 
+    @OneToOne(mappedBy = "anamnesis", cascade = CascadeType.ALL, orphanRemoval = true)
+    private AnamnesisReferral referral;
 
-    // Getters and Setters
-    public Character getStatus() {
-        return status;
-    }
-
-    public void setStatus(Character status) {
-        this.status = status;
-    }
     public Long getId() {
         return id;
     }
@@ -102,6 +57,22 @@ public class Anamnesis {
         this.patient = patient;
     }
 
+    public AnamnesisTemplate getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(AnamnesisTemplate template) {
+        this.template = template;
+    }
+
+    public List<AnamnesisAnswer> getAnswers() {
+        return answers;
+    }
+
+    public void setAnswers(List<AnamnesisAnswer> answers) {
+        this.answers = answers;
+    }
+
     public Date getInterviewDate() {
         return interviewDate;
     }
@@ -110,104 +81,15 @@ public class Anamnesis {
         this.interviewDate = interviewDate;
     }
 
-    public byte[] getReport() {
-        return report;
+    public Character getStatus() {
+        return status;
     }
 
-    public void setReport(byte[] report) {
-        this.report = report;
-    }
-
-    public String getDiagnoses() {
-        return diagnoses;
-    }
-
-    public void setDiagnoses(String diagnoses) {
-        this.diagnoses = diagnoses;
-    }
-
-    public String getMedicationAndAllergies() {
-        return medicationAndAllergies;
-    }
-
-    public void setMedicationAndAllergies(String medicationAndAllergies) {
-        this.medicationAndAllergies = medicationAndAllergies;
-    }
-
-    public String getIndications() {
-        return indications;
-    }
-
-    public void setIndications(String indications) {
-        this.indications = indications;
-    }
-
-    public String getObjectives() {
-        return objectives;
-    }
-
-    public void setObjectives(String objectives) {
-        this.objectives = objectives;
-    }
-
-    public String getDevelopmentHistory() {
-        return developmentHistory;
-    }
-
-    public void setDevelopmentHistory(String developmentHistory) {
-        this.developmentHistory = developmentHistory;
-    }
-
-    public String getPreferences() {
-        return preferences;
-    }
-
-    public void setPreferences(String preferences) {
-        this.preferences = preferences;
-    }
-
-    public String getInterferingBehaviors() {
-        return interferingBehaviors;
-    }
-
-    public void setInterferingBehaviors(String interferingBehaviors) {
-        this.interferingBehaviors = interferingBehaviors;
-    }
-
-    public String getQualityOfLife() {
-        return qualityOfLife;
-    }
-
-    public void setQualityOfLife(String qualityOfLife) {
-        this.qualityOfLife = qualityOfLife;
-    }
-
-    public String getFeeding() {
-        return feeding;
-    }
-
-    public void setFeeding(String feeding) {
-        this.feeding = feeding;
-    }
-
-    public String getSleep() {
-        return sleep;
-    }
-
-    public void setSleep(String sleep) {
-        this.sleep = sleep;
-    }
-
-    public String getTherapists() {
-        return therapists;
-    }
-
-    public void setTherapists(String therapists) {
-        this.therapists = therapists;
+    public void setStatus(Character status) {
+        this.status = status;
     }
 
     public AnamnesisReferral getReferral() {
-
         return referral;
     }
 
