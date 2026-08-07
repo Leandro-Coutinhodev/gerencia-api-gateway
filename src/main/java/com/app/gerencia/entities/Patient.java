@@ -30,9 +30,9 @@ public class Patient {
     @JoinColumn(name = "guardian_id", nullable = true)
     private Guardian guardian;
 
-    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Contract> contracts;
+//    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonManagedReference
+//    private List<Contract> contracts;
 
     @Lob
     @JsonIgnore
@@ -108,11 +108,11 @@ public class Patient {
         this.anamneses = anamneses;
     }
 
-    public List<Contract> getContracts() {
-        return contracts;
-    }
-
-    public void setContracts(List<Contract> contracts) {
-        this.contracts = contracts;
-    }
+//    public List<Contract> getContracts() {
+//        return contracts;
+//    }
+//
+//    public void setContracts(List<Contract> contracts) {
+//        this.contracts = contracts;
+//    }
 }

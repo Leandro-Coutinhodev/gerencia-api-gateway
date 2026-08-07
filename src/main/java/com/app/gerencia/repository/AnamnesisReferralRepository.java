@@ -12,9 +12,9 @@ import java.util.Optional;
 public interface AnamnesisReferralRepository extends JpaRepository<AnamnesisReferral, Long> {
 
     Optional<AnamnesisReferral> findByAnamnesisId(Long anamnesisId);
-    Optional<List<AnamnesisReferral>> findAllByAssistantIdIsNotNull();
-    List<AnamnesisReferral> findByAnamnesisIdIn(List<Long> anamnesisIds);
-    List<AnamnesisReferral> findAllByAssistantIdIsNotNullAndAssistantId(Long assistantId);
+    List<AnamnesisReferral> findAllByAnamnesisIdIn(List<Long> anamnesisIds);
+    Optional<List<AnamnesisReferral>> findAllByProfessionalIdIsNotNull();
+    List<AnamnesisReferral> findAllByProfessionalIdIsNotNullAndProfessionalId(Long professionalId);
 
 }
 

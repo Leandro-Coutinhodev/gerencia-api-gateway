@@ -1,128 +1,116 @@
 package com.app.gerencia.entities;
 
-import com.app.gerencia.entities.Contract;
-import com.app.gerencia.entities.Guardian;
-import com.app.gerencia.entities.User;
 import com.app.gerencia.enums.ParticipantRole;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.util.List;
 
+/**
+ * Participante de um contrato na fila de assinatura.
+ * Pode ser: RESPONSAVEL, EMPRESA ou TESTEMUNHA.
+ */
 @Entity
 @Table(name = "tb_contract_participant")
 public class ContractParticipant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "contract_participant_id")
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "contract_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_id", nullable = false)
     @JsonBackReference
     private Contract contract;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ParticipantRole role;
 
-    // Guardian ou User (Secretary)
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = true)
-    private User user;
+    /**
+     * Dados desnormalizados para rastreabilidade.
+     * Não dependem de Guardian/User existir no futuro.
+     */
+    @Column(nullable = false)
+    private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "guardian_id", nullable = true)
-    private Guardian guardian;
+    @Column(nullable = false)
+    private String email;
 
+    private String cpf;
+
+    /** Ordem na fila de assinatura. */
+    @Column(name = "signing_order", nullable = false)
     private Integer signingOrder;
 
-    @Column(unique = true)
+    /** Token UUID para link de assinatura único. */
+    @Column(unique = true, nullable = false)
     private String token;
 
-    private Boolean signed = false;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "signing_status", nullable = false)
+    private SigningStatus signingStatus = SigningStatus.PENDENTE;
 
-    private LocalDateTime signedAt;
+    // ── Referências opcionais ao sistema ──────────────────────────────────
 
-    private String signedIp;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id")
+    private Guardian guardian;
 
-    // getters e setters
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    public Long getId() {
-        return id;
-    }
+    /** Assinatura registrada (criada quando o participante assina). */
+    @OneToOne(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ContractSignature signature;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    /** Respostas aos campos de aceite registradas nesta assinatura. */
+    @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ContractAcceptResponse> acceptResponses;
 
-    public Contract getContract() {
-        return contract;
-    }
+    public enum SigningStatus { PENDENTE, ASSINADO, REJEITADO }
 
-    public void setContract(Contract contract) {
-        this.contract = contract;
-    }
+    // ── Getters/Setters ────────────────────────────────────────────────────
 
-    public ParticipantRole getRole() {
-        return role;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setRole(ParticipantRole role) {
-        this.role = role;
-    }
+    public Contract getContract() { return contract; }
+    public void setContract(Contract contract) { this.contract = contract; }
 
-    public User getUser() {
-        return user;
-    }
+    public ParticipantRole getRole() { return role; }
+    public void setRole(ParticipantRole role) { this.role = role; }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public Guardian getGuardian() {
-        return guardian;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setGuardian(Guardian guardian) {
-        this.guardian = guardian;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public Integer getSigningOrder() {
-        return signingOrder;
-    }
+    public Integer getSigningOrder() { return signingOrder; }
+    public void setSigningOrder(Integer signingOrder) { this.signingOrder = signingOrder; }
 
-    public void setSigningOrder(Integer signingOrder) {
-        this.signingOrder = signingOrder;
-    }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
-    public String getToken() {
-        return token;
-    }
+    public SigningStatus getSigningStatus() { return signingStatus; }
+    public void setSigningStatus(SigningStatus signingStatus) { this.signingStatus = signingStatus; }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
+    public Guardian getGuardian() { return guardian; }
+    public void setGuardian(Guardian guardian) { this.guardian = guardian; }
 
-    public Boolean getSigned() {
-        return signed;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public void setSigned(Boolean signed) {
-        this.signed = signed;
-    }
+    public ContractSignature getSignature() { return signature; }
+    public void setSignature(ContractSignature signature) { this.signature = signature; }
 
-    public LocalDateTime getSignedAt() {
-        return signedAt;
-    }
+    public List<ContractAcceptResponse> getAcceptResponses() { return acceptResponses; }
+    public void setAcceptResponses(List<ContractAcceptResponse> acceptResponses) { this.acceptResponses = acceptResponses; }
 
-    public void setSignedAt(LocalDateTime signedAt) {
-        this.signedAt = signedAt;
-    }
-
-    public String getSignedIp() {
-        return signedIp;
-    }
-
-    public void setSignedIp(String signedIp) {
-        this.signedIp = signedIp;
-    }
+    public boolean isSigned() { return SigningStatus.ASSINADO == this.signingStatus; }
 }

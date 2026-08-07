@@ -20,8 +20,8 @@ public class AnamnesisReferral {
     private Anamnesis anamnesis;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assistant_id", nullable = true)
-    private Assistant assistant;
+    @JoinColumn(name = "professional_id", nullable = true)
+    private Professional professional;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -50,13 +50,6 @@ public class AnamnesisReferral {
         this.anamnesis = anamnesis;
     }
 
-    public Assistant getAssistant() {
-        return assistant;
-    }
-
-    public void setAssistant(Assistant assistant) {
-        this.assistant = assistant;
-    }
 
     public User getSender() {
         return sender;
@@ -80,5 +73,13 @@ public class AnamnesisReferral {
 
     public void setSentAt(Date sentAt) {
         this.sentAt = sentAt;
+    }
+
+    public Professional getProfessional() {
+        return professional;
+    }
+
+    public void setProfessional(Professional professional) {
+        this.professional = professional;
     }
 }

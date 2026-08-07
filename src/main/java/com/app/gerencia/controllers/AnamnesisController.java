@@ -415,26 +415,26 @@ public class AnamnesisController {
 //    // DTO para a requisição de atribuição
 //    public record AssignAssistantRequestDTO(Long assistantId) {}
 //
-//    @GetMapping("/anamnesis/{anamnesisId}/referral")
-//    public ResponseEntity<?> getReferralByAnamnesis(@PathVariable Long anamnesisId) {
-//        return referralRepository.findByAnamnesisId(anamnesisId)
-//                .map(referral -> ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(referral)))
-//                .orElse(ResponseEntity.notFound().build());
-//    }
-//
-    @GetMapping("/anamnesis/referral/findByAssistant/{assistantId}")
-    public ResponseEntity<?> findAllReferral(@PathVariable Long assistantId) {
-        try {
-            List<AnamnesisReferral> referrals = referralService.findByAssistantId(assistantId);
-
-            List<AnamnesisReferralResponseDTO> response = referrals.stream()
-                    .map(AnamnesisReferralResponseDTO::fromEntity)
-                    .toList();
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Erro ao buscar encaminhamentos: " + e.getMessage());
-        }
+    @GetMapping("/anamnesis/{anamnesisId}/referral")
+    public ResponseEntity<?> getReferralByAnamnesis(@PathVariable Long anamnesisId) {
+        return referralRepository.findByAnamnesisId(anamnesisId)
+                .map(referral -> ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(referral)))
+                .orElse(ResponseEntity.notFound().build());
     }
+//
+//    @GetMapping("/anamnesis/referral/findByAssistant/{assistantId}")
+//    public ResponseEntity<?> findAllReferral(@PathVariable Long assistantId) {
+//        try {
+//            List<AnamnesisReferral> referrals = referralService.findByAssistantId(assistantId);
+//
+//            List<AnamnesisReferralResponseDTO> response = referrals.stream()
+//                    .map(AnamnesisReferralResponseDTO::fromEntity)
+//                    .toList();
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body("Erro ao buscar encaminhamentos: " + e.getMessage());
+//        }
+//    }
 //
 //    @GetMapping("/anamnesis/referral/{patientId}")
 //    public ResponseEntity<?> historySend(@PathVariable Long patientId){
@@ -494,22 +494,13 @@ public class AnamnesisController {
 //        }
 //    }
 //
-    @GetMapping("/anamnesis/referral/findall")
-    public ResponseEntity<?> listReferral(){
-        try{
-            List<AnamnesisReferral> referrals = referralService.findAll();
-            return ResponseEntity.ok(referrals);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
 
-    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
+
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     @PostMapping("/anamnesis/referral")
     public ResponseEntity<?> sendReferral(@RequestBody AnamnesisReferralRequestDTO request) {
         try {
-            String userId = SecurityContextHolder.getContext()
-                    .getAuthentication().getName();
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
             var referral = referralService.createReferral(Long.parseLong(userId), request);
             return ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(referral));
         } catch (EntityNotFoundException e) {
@@ -521,37 +512,88 @@ public class AnamnesisController {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
-    @PutMapping("/anamnesis/referral/{referralId}/assign-assistant")
-    public ResponseEntity<?> assignAssistant(@PathVariable Long referralId,
-                                             @RequestBody AssignAssistantRequestDTO request) {
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @PutMapping("/anamnesis/referral/{referralId}/assign-professional")
+    public ResponseEntity<?> assignProfessional(@PathVariable Long referralId,
+                                                @RequestBody AssignProfessionalRequestDTO request) {
         try {
-            var updated = referralService.assignAssistant(referralId, request.assistantId());
+            var updated = referralService.assignProfessional(referralId, request.professionalId());
             return ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(updated));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro: " + e.getMessage());
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
-    @PutMapping("/anamnesis/referral/{referralId}/assign-assistant/mail")
-    public ResponseEntity<?> assignAssistantEmail(@PathVariable Long referralId,
-                                                  @RequestBody AssignAssistantRequestDTO request) {
+
+
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @PutMapping("/anamnesis/referral/{referralId}/assign-professional/mail")
+    public ResponseEntity<?> assignProfessionalEmail(@PathVariable Long referralId,
+                                                     @RequestBody AssignProfessionalRequestDTO request) {
         try {
-            var updated = referralService.assignAssistantEmail(referralId, request.assistantId());
+            var updated = referralService.assignProfessionalEmail(referralId, request.professionalId());
             return ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(updated));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro: " + e.getMessage());
         }
     }
 
-    public record AssignAssistantRequestDTO(Long assistantId) {}
+    @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
+    @GetMapping("/anamnesis/referral/my")
+    public ResponseEntity<?> findMyReferrals() {
+        try {
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+            List<AnamnesisReferral> referrals = referralService.findByProfessionalId(Long.parseLong(userId));
+            var response = referrals.stream().map(AnamnesisReferralResponseDTO::fromEntity).toList();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erro ao buscar encaminhamentos: " + e.getMessage());
+        }
+    }
 
+
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @GetMapping("/anamnesis/referral/findall")
+    public ResponseEntity<?> listReferral() {
+        try {
+            List<AnamnesisReferral> referrals = referralService.findAll();
+            return ResponseEntity.ok(referrals);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    public record AssignProfessionalRequestDTO(Long professionalId) {}
+
+    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
+    @Transactional(readOnly = true)
+    @GetMapping("/anamnesis/referral/findById/{id}")
+    public ResponseEntity<?> findReferralById(@PathVariable Long id) {
+        try {
+            AnamnesisReferral referral = referralService.findById(id);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("SCOPE_ADMIN"));
+
+            // profissional só pode abrir o encaminhamento que é dele
+            if (!isAdmin) {
+                Long userId = Long.parseLong(auth.getName());
+                if (referral.getProfessional() == null || !referral.getProfessional().getId().equals(userId)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            }
+
+            return ResponseEntity.ok(referral);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
 }

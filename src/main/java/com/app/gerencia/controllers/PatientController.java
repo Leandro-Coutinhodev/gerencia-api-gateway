@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -149,5 +150,13 @@ public class PatientController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @Transactional(readOnly = true)
+    @GetMapping("/patient/birthday")
+    public ResponseEntity<List<Patient>> findBirthdayPatients(
+            @RequestParam(required = false) Integer month) {
+        List<Patient> patients = patientService.findByBirthMonth(month);
+        return ResponseEntity.ok(patients);
     }
 }

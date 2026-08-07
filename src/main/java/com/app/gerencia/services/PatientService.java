@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -112,5 +113,10 @@ public class PatientService {
             // Se não tem números suficientes, busca apenas por nome
             return patientRepository.findByNameContainingIgnoreCase(query);
         }
+    }
+
+    public List<Patient> findByBirthMonth(Integer month) {
+        int targetMonth = (month != null) ? month : LocalDate.now().getMonthValue();
+        return patientRepository.findByBirthMonth(targetMonth);
     }
 }

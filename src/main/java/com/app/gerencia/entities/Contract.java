@@ -1,200 +1,165 @@
 package com.app.gerencia.entities;
 
 import com.app.gerencia.enums.ContractStatus;
-import com.app.gerencia.enums.ContractType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Contrato gerado a partir de um modelo ou anexado externamente.
+ */
 @Entity
 @Table(name = "tb_contract")
 public class Contract {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "contract_id")
     private Long id;
 
-//    @Lob
-//    @Column(nullable = false)
-//    private String clauses;
-//
-//    @Column(nullable = false, unique = true)
-//    private String hash;
-
-    @Column(name = "created_ip")
-    private String createdIp;
-
-    private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    private ContractStatus status;
+    /** Modelo usado para gerar este contrato. Null = PDF anexado externamente. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_template_id")
+    private ContractTemplate template;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guardian_id")
-    private Guardian guardian;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "patient_id", nullable = false)
     @JsonBackReference
-    @JoinColumn(name = "patient_id")
     private Patient patient;
 
-    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<ContractParticipant> participants;
-
-    @Column(unique = true)
-    private String hash;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_id", nullable = false)
+    private Guardian guardian;
 
     @Enumerated(EnumType.STRING)
-    private ContractType type;
+    @Column(nullable = false)
+    private ContractStatus status = ContractStatus.RASCUNHO;
 
-    private Boolean hasWitnesses;
+    /**
+     * JSON com os valores preenchidos para as variáveis dinâmicas.
+     * Ex: {"valor_plano":"R$ 500,00","data_inicio":"01/01/2025"}
+     */
+    @Column(name = "variables_data", columnDefinition = "TEXT")
+    private String variablesData;
 
+    /**
+     * Conteúdo final do contrato com variáveis já substituídas.
+     * Gerado no momento do envio para assinatura.
+     */
+    @Column(name = "rendered_content", columnDefinition = "TEXT")
+    private String renderedContent;
+
+    /** PDF gerado com assinaturas eletrônicas (após conclusão). */
     @Lob
     @Column(name = "pdf_data")
     private byte[] pdfData;
 
+    @Column(name = "pdf_file_name")
     private String pdfFileName;
 
-    private String pdfContentType;
-
-    public byte[] getPdfData() {
-        return pdfData;
-    }
-
-    public void setPdfData(byte[] pdfData) {
-        this.pdfData = pdfData;
-    }
-
-    public String getPdfFileName() {
-        return pdfFileName;
-    }
-
-    public void setPdfFileName(String pdfFileName) {
-        this.pdfFileName = pdfFileName;
-    }
-
-    public String getPdfContentType() {
-        return pdfContentType;
-    }
-
-    public void setPdfContentType(String pdfContentType) {
-        this.pdfContentType = pdfContentType;
-    }
-
-    public ContractType getType() {
-        return type;
-    }
-
-    public void setType(ContractType type) {
-        this.type = type;
-    }
-
-    public Boolean getHasWitnesses() {
-        return hasWitnesses;
-    }
-
-    public void setHasWitnesses(Boolean hasWitnesses) {
-        this.hasWitnesses = hasWitnesses;
-    }
-
-    public String getPdfPath() {
-        return pdfPath;
-    }
-
-    public void setPdfPath(String pdfPath) {
-        this.pdfPath = pdfPath;
-    }
-
-    public String getHash() {
-        return hash;
-    }
-
-    public void setHash(String hash) {
-        this.hash = hash;
-    }
-
     /**
-     * Caminho do PDF final assinado no filesystem.
+     * PDF anexado externamente (fluxo "já assinado").
      */
-    @Column(name = "pdf_path")
-    private String pdfPath;
+    @Lob
+    @Column(name = "external_pdf_data")
+    private byte[] externalPdfData;
 
-    // getters e setters
+    @Column(name = "external_pdf_file_name")
+    private String externalPdfFileName;
 
-    public Long getId() {
-        return id;
+    /** Hash SHA-256 do conteúdo renderizado para integridade. */
+    @Column(unique = true)
+    private String hash;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "created_ip")
+    private String createdIp;
+
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
+    /** Se este contrato usa testemunhas (relevante quando modelo é OPCIONAL). */
+    @Column(name = "has_witnesses")
+    private Boolean hasWitnesses = false;
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @OrderBy("signingOrder ASC")
+    private List<ContractParticipant> participants;
+
+    // ── Construtores ───────────────────────────────────────────────────────
+
+    public Contract() {
+        this.createdAt = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    // ── Status helpers ─────────────────────────────────────────────────────
+
+    public boolean isCompleted() {
+        return ContractStatus.ASSINADO == this.status
+                || ContractStatus.ASSINADO_EXTERNAMENTE == this.status;
     }
 
-//    public String getClauses() {
-//        return clauses;
-//    }
-//
-//    public void setClauses(String clauses) {
-//        this.clauses = clauses;
-//    }
-//
-//    public String getHash() {
-//        return hash;
-//    }
-//
-//    public void setHash(String hash) {
-//        this.hash = hash;
-//    }
+    // ── Getters/Setters ────────────────────────────────────────────────────
 
-    public String getCreatedIp() {
-        return createdIp;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setCreatedIp(String createdIp) {
-        this.createdIp = createdIp;
-    }
+    public ContractTemplate getTemplate() { return template; }
+    public void setTemplate(ContractTemplate template) { this.template = template; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public Patient getPatient() { return patient; }
+    public void setPatient(Patient patient) { this.patient = patient; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Guardian getGuardian() { return guardian; }
+    public void setGuardian(Guardian guardian) { this.guardian = guardian; }
 
-    public ContractStatus getStatus() {
-        return status;
-    }
+    public ContractStatus getStatus() { return status; }
+    public void setStatus(ContractStatus status) { this.status = status; }
 
-    public void setStatus(ContractStatus status) {
-        this.status = status;
-    }
+    public String getVariablesData() { return variablesData; }
+    public void setVariablesData(String variablesData) { this.variablesData = variablesData; }
 
-    public Guardian getGuardian() {
-        return guardian;
-    }
+    public String getRenderedContent() { return renderedContent; }
+    public void setRenderedContent(String renderedContent) { this.renderedContent = renderedContent; }
 
-    public void setGuardian(Guardian guardian) {
-        this.guardian = guardian;
-    }
+    public byte[] getPdfData() { return pdfData; }
+    public void setPdfData(byte[] pdfData) { this.pdfData = pdfData; }
 
-    public Patient getPatient() {
-        return patient;
-    }
+    public String getPdfFileName() { return pdfFileName; }
+    public void setPdfFileName(String pdfFileName) { this.pdfFileName = pdfFileName; }
 
-    public void setPatient(Patient patient) {
-        this.patient = patient;
-    }
+    public byte[] getExternalPdfData() { return externalPdfData; }
+    public void setExternalPdfData(byte[] externalPdfData) { this.externalPdfData = externalPdfData; }
 
-    public List<ContractParticipant> getParticipants() {
-        return participants;
-    }
+    public String getExternalPdfFileName() { return externalPdfFileName; }
+    public void setExternalPdfFileName(String externalPdfFileName) { this.externalPdfFileName = externalPdfFileName; }
 
-    public void setParticipants(List<ContractParticipant> participants) {
-        this.participants = participants;
-    }
+    public String getHash() { return hash; }
+    public void setHash(String hash) { this.hash = hash; }
 
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getCreatedIp() { return createdIp; }
+    public void setCreatedIp(String createdIp) { this.createdIp = createdIp; }
+
+    public Long getCreatedByUserId() { return createdByUserId; }
+    public void setCreatedByUserId(Long createdByUserId) { this.createdByUserId = createdByUserId; }
+
+    public Boolean getHasWitnesses() { return hasWitnesses; }
+    public void setHasWitnesses(Boolean hasWitnesses) { this.hasWitnesses = hasWitnesses; }
+
+    public List<ContractParticipant> getParticipants() { return participants; }
+    public void setParticipants(List<ContractParticipant> participants) { this.participants = participants; }
 }

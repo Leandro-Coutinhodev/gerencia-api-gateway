@@ -1,7 +1,12 @@
 package com.app.gerencia.enums;
 
 public enum ContractStatus {
-    PENDING_SIGNATURES,
-    COMPLETED,
-    CANCELED
+    RASCUNHO,
+    AGUARDANDO_ASSINATURA,
+    ASSINADO_PARCIALMENTE,
+    ASSINADO,
+    CANCELADO,
+    EXPIRADO,
+    ASSINADO_EXTERNAMENTE
 }
+

@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/contract/*/pdf").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/recovery").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/recovery/reset").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/contracts/*/pdf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/field/*/file").permitAll()
                         .requestMatchers(
                                 "/api-gateway/gerencia/anamnesis/form/**",
                                 "/api-gateway/gerencia/anamnesis/*/response"

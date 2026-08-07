@@ -2,412 +2,542 @@ package com.app.gerencia.services;
 
 import com.app.gerencia.entities.*;
 import com.app.gerencia.enums.ParticipantRole;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 
+/**
+ * Gera o PDF final do contrato apos todas as assinaturas.
+ *
+ * Estrutura:
+ *   Paginas 1..N → Clausulas + campos de aceite (corpo do contrato)
+ *   Ultima pagina → Registro de Assinaturas Eletronicas
+ */
 @Service
 public class ContractPdfService {
 
-    @Value("${app.contracts.template-path:classpath:templates/contrato_template.pdf}")
-    private String templatePath;
-
-    @Value("${app.contracts.output-dir:./contracts}")
-    private String outputDir;
+    // ── Layout ──────────────────────────────────────────────────────────────
+    private static final float PAGE_W      = PDRectangle.A4.getWidth();
+    private static final float PAGE_H      = PDRectangle.A4.getHeight();
+    private static final float MARGIN      = 60f;
+    private static final float CONTENT_W   = PAGE_W - MARGIN * 2;
+    private static final float TOP_Y       = PAGE_H - 55f;
+    private static final float BOTTOM_STOP = 70f;
+    private static final float LINE_H      = 14.5f;
+    private static final float PARA_GAP    = 7f;
+    private static final float BLOCK_PAD   = 12f;
 
     private static final DateTimeFormatter DATE_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy – HH:mm");
+            DateTimeFormatter.ofPattern("dd/MM/yyyy 'as' HH:mm");
 
-    private static final float MARGIN_LEFT = 60;
-    private static final float MARGIN_RIGHT = 60;
-    private static final float LINE_HEIGHT = 16;
-    private static final float SECTION_GAP = 10;
+    // ── Cores ────────────────────────────────────────────────────────────────
+    private static final float[] DARK   = {0.10f, 0.10f, 0.10f};
+    private static final float[] MID    = {0.28f, 0.28f, 0.28f};
+    private static final float[] LIGHT  = {0.42f, 0.42f, 0.42f};
+    private static final float[] RULE   = {0.78f, 0.78f, 0.78f};
+    private static final float[] BG_BOX = {0.965f, 0.965f, 0.975f};
+    private static final float[] C_RESPONSAVEL = {0.22f, 0.38f, 0.92f};
+    private static final float[] C_EMPRESA     = {0.12f, 0.54f, 0.12f};
+    private static final float[] C_TESTEMUNHA  = {0.84f, 0.54f, 0.10f};
 
-    /**
-     * Gera o PDF final do contrato com o bloco de assinaturas eletrônicas.
-     * Retorna o caminho do arquivo gerado e o hash do contrato.
-     */
-    public GeneratedPdf generate(Contract contract) throws IOException, NoSuchAlgorithmException {
+    // ════════════════════════════════════════════════════════════════════════
+    // Entrada publica
+    // ════════════════════════════════════════════════════════════════════════
 
-        // Garante que o diretório de saída exista
-        File dir = new File(outputDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-
-        // Gera o hash identificador do contrato
-        String hash = generateHash(contract);
-
-        // Carrega o PDF template
-        File templateFile = resolveTemplate();
-        PDDocument document = PDDocument.load(templateFile);
-
-        try {
-            // 1) Preenche os placeholders na primeira página do template
-            fillTemplatePlaceholders(document, contract);
-
-            // 2) Adiciona a página de assinaturas eletrônicas
-            addSignaturePage(document, contract, hash);
-
-            // Salva o PDF gerado
-            String fileName = String.format("contrato_%d_assinado.pdf", contract.getId());
-            String outputPath = outputDir + File.separator + fileName;
-            document.save(outputPath);
-
-            return new GeneratedPdf(outputPath, hash);
-        } finally {
-            document.close();
+    public byte[] generateFinalPdf(Contract contract) throws Exception {
+        try (PDDocument doc = new PDDocument()) {
+            Cursor cur = newPage(doc);
+            cur = writeContractContent(doc, cur, contract);
+            cur = newPage(doc);
+            writeSignaturePage(doc, cur, contract);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            doc.save(out);
+            return out.toByteArray();
         }
     }
 
-    // ──────────────────────────────────────────────
-    //  Preencher placeholders do template
-    // ──────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════
+    // Corpo do contrato (clausulas + campos de aceite)
+    // ════════════════════════════════════════════════════════════════════════
 
-    private void fillTemplatePlaceholders(PDDocument document, Contract contract) {
-        // O preenchimento de placeholders em PDF existente é complexo com PDFBox
-        // pois o texto já está renderizado. A abordagem mais robusta é usar
-        // o template como base visual e sobrepor os dados nos campos corretos.
-        //
-        // Para um sistema de produção, considere:
-        // - Usar um template com campos de formulário (AcroForm) preenchíveis
-        // - Ou gerar o contrato inteiramente via código
-        //
-        // Aqui manteremos o template original e adicionaremos apenas
-        // a página de assinaturas ao final.
-    }
+    private Cursor writeContractContent(PDDocument doc, Cursor cur,
+                                        Contract contract) throws Exception {
 
-    // ──────────────────────────────────────────────
-    //  Página de assinaturas eletrônicas
-    // ──────────────────────────────────────────────
+        String templateName = contract.getTemplate() != null
+                ? contract.getTemplate().getName() : "Contrato";
 
-    private void addSignaturePage(PDDocument document, Contract contract, String hash)
-            throws IOException {
+        cur = lineCentered(doc, cur, templateName,
+                PDType1Font.HELVETICA_BOLD, 15f, DARK);
+        cur.y -= 4;
+        cur = hRule(doc, cur, RULE);
+        cur.y -= PARA_GAP * 2;
 
-        PDPage page = new PDPage(PDRectangle.A4);
-        document.addPage(page);
+        ContractTemplate tmpl = contract.getTemplate();
 
-        float pageWidth = page.getMediaBox().getWidth();
-        float pageHeight = page.getMediaBox().getHeight();
-        float usableWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
+        // ── Clausulas ──────────────────────────────────────────────────────
+        if (tmpl != null && tmpl.getClauses() != null && !tmpl.getClauses().isEmpty()) {
 
-        PDType1Font fontBold = PDType1Font.HELVETICA_BOLD;
-        PDType1Font fontRegular = PDType1Font.HELVETICA;
-        PDType1Font fontItalic = PDType1Font.HELVETICA_OBLIQUE;
+            Map<String, String> vars = parseVariablesData(contract.getVariablesData());
 
-        PDPageContentStream cs = new PDPageContentStream(document, page);
+            for (ContractClause clause : tmpl.getClauses()) {
 
-        try {
-            float y = pageHeight - 60;
+                // Titulo da clausula
+                cur.y -= PARA_GAP;
+                if (cur.y < BOTTOM_STOP) cur = newPage(doc);
 
-            // ── Linha separadora superior ──
-            cs.setStrokingColor(0.75f, 0.75f, 0.75f);
-            cs.setLineWidth(1f);
-            cs.moveTo(MARGIN_LEFT, y);
-            cs.lineTo(pageWidth - MARGIN_RIGHT, y);
-            cs.stroke();
-            y -= 30;
-
-            // ── Título ──
-            cs.beginText();
-            cs.setFont(fontBold, 14);
-            cs.setNonStrokingColor(0.15f, 0.15f, 0.15f);
-            String title = "Assinaturas Eletronicas";
-            float titleWidth = fontBold.getStringWidth(title) / 1000 * 14;
-            cs.newLineAtOffset((pageWidth - titleWidth) / 2, y);
-            cs.showText(title);
-            cs.endText();
-            y -= 8;
-
-            // ── Subtítulo ──
-            y -= LINE_HEIGHT;
-            cs.beginText();
-            cs.setFont(fontItalic, 9);
-            cs.setNonStrokingColor(0.45f, 0.45f, 0.45f);
-            String subtitle = "Este contrato foi assinado eletronicamente.";
-            float subWidth = fontItalic.getStringWidth(subtitle) / 1000 * 9;
-            cs.newLineAtOffset((pageWidth - subWidth) / 2, y);
-            cs.showText(subtitle);
-            cs.endText();
-            y -= 30;
-
-            // ── Linha separadora ──
-            cs.setStrokingColor(0.85f, 0.85f, 0.85f);
-            cs.moveTo(MARGIN_LEFT, y);
-            cs.lineTo(pageWidth - MARGIN_RIGHT, y);
-            cs.stroke();
-            y -= 25;
-
-            // ── Participantes ──
-            List<ContractParticipant> participants = contract.getParticipants();
-            int witnessCount = 0;
-
-            for (ContractParticipant p : participants) {
-
-                String roleName;
-                String personName;
-                String cpf;
-                String email;
-
-                if (p.getRole() == ParticipantRole.CONTRACTOR) {
-                    roleName = "Contratante";
-                    Guardian g = p.getGuardian();
-                    personName = g != null ? g.getName() : "N/A";
-                    cpf = g != null ? g.getCpf() : "N/A";
-                    email = g != null ? g.getEmail() : "N/A";
-                } else if (p.getRole() == ParticipantRole.WITNESS) {
-                    witnessCount++;
-                    roleName = "Testemunha " + witnessCount;
-                    User u = p.getUser();
-                    personName = u != null ? u.getName() : "N/A";
-                    cpf = u != null ? u.getCpf() : "N/A";
-                    email = u != null ? u.getEmail() : "N/A";
-                } else {
-                    roleName = p.getRole().name();
-                    personName = "N/A";
-                    cpf = "N/A";
-                    email = "N/A";
+                String clauseTitle = clause.getClauseOrder() + ". " + safe(clause.getTitle());
+                for (String wl : wrapText(clauseTitle, PDType1Font.HELVETICA_BOLD, 10.5f, CONTENT_W)) {
+                    if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+                    cur = drawLine(doc, cur, wl, PDType1Font.HELVETICA_BOLD, 10.5f, DARK, MARGIN);
                 }
+                cur.y -= PARA_GAP / 2f;
 
-                String signedDate = p.getSignedAt() != null
-                        ? p.getSignedAt().format(DATE_FMT)
-                        : "Pendente";
-                String signedIp = p.getSignedIp() != null
-                        ? p.getSignedIp()
-                        : "N/A";
-
-                // Caixa de fundo
-                float boxHeight = 80;
-                cs.setNonStrokingColor(0.97f, 0.97f, 0.98f);
-                cs.addRect(MARGIN_LEFT, y - boxHeight + 10, usableWidth, boxHeight);
-                cs.fill();
-
-                // Borda esquerda colorida
-                cs.setNonStrokingColor(0.23f, 0.39f, 0.93f); // azul
-                cs.addRect(MARGIN_LEFT, y - boxHeight + 10, 4, boxHeight);
-                cs.fill();
-
-                // Role (título)
-                float textX = MARGIN_LEFT + 16;
-                float textY = y;
-                cs.beginText();
-                cs.setFont(fontBold, 11);
-                cs.setNonStrokingColor(0.15f, 0.15f, 0.15f);
-                cs.newLineAtOffset(textX, textY);
-                cs.showText(roleName);
-                cs.endText();
-
-                // Nome
-                textY -= LINE_HEIGHT;
-                cs.beginText();
-                cs.setFont(fontRegular, 10);
-                cs.setNonStrokingColor(0.3f, 0.3f, 0.3f);
-                cs.newLineAtOffset(textX, textY);
-                cs.showText("Nome: " + sanitize(personName));
-                cs.endText();
-
-                // CPF + E-mail na mesma linha
-                textY -= LINE_HEIGHT;
-                cs.beginText();
-                cs.setFont(fontRegular, 10);
-                cs.newLineAtOffset(textX, textY);
-                cs.showText("CPF: " + sanitize(cpf) + "     E-mail: " + sanitize(email));
-                cs.endText();
-
-                // Data/Hora + IP
-                textY -= LINE_HEIGHT;
-                cs.beginText();
-                cs.setFont(fontRegular, 10);
-                cs.newLineAtOffset(textX, textY);
-                cs.showText("Data/Hora: " + signedDate + "     IP: " + signedIp);
-                cs.endText();
-
-                y -= boxHeight + SECTION_GAP + 8;
-
-                // Se ultrapassar o limite da página, cria nova página
-                if (y < 120) {
-                    cs.close();
-                    page = new PDPage(PDRectangle.A4);
-                    document.addPage(page);
-                    cs = new PDPageContentStream(document, page);
-                    y = pageHeight - 60;
+                // Conteudo com variaveis substituidas
+                String body = safe(clause.getContent());
+                for (Map.Entry<String, String> e : vars.entrySet()) {
+                    body = body.replace("{{" + e.getKey() + "}}", e.getValue());
                 }
+                body = body.replaceAll("\\{\\{[^}]+}}", "___");
+
+                for (String para : body.split("\n")) {
+                    String p = para.trim();
+                    if (p.isEmpty()) { cur.y -= PARA_GAP / 2f; continue; }
+                    for (String wl : wrapText(p, PDType1Font.HELVETICA, 10f, CONTENT_W)) {
+                        if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+                        cur = drawLine(doc, cur, wl, PDType1Font.HELVETICA, 10f, MID, MARGIN);
+                    }
+                }
+                cur.y -= PARA_GAP / 2f;
             }
 
-            // ── Contratada (LP Kids) ──
-            y -= 5;
-            float boxHeight = 65;
-            cs.setNonStrokingColor(0.97f, 0.97f, 0.98f);
-            cs.addRect(MARGIN_LEFT, y - boxHeight + 10, usableWidth, boxHeight);
-            cs.fill();
-
-            cs.setNonStrokingColor(0.13f, 0.55f, 0.13f); // verde
-            cs.addRect(MARGIN_LEFT, y - boxHeight + 10, 4, boxHeight);
-            cs.fill();
-
-            float textX = MARGIN_LEFT + 16;
-            cs.beginText();
-            cs.setFont(fontBold, 11);
-            cs.setNonStrokingColor(0.15f, 0.15f, 0.15f);
-            cs.newLineAtOffset(textX, y);
-            cs.showText("Contratada");
-            cs.endText();
-
-            y -= LINE_HEIGHT;
-            cs.beginText();
-            cs.setFont(fontRegular, 10);
-            cs.setNonStrokingColor(0.3f, 0.3f, 0.3f);
-            cs.newLineAtOffset(textX, y);
-            cs.showText("Razao Social: LUANA PEREIRA DOS SANTOS LIMA");
-            cs.endText();
-
-            y -= LINE_HEIGHT;
-            cs.beginText();
-            cs.setFont(fontRegular, 10);
-            cs.newLineAtOffset(textX, y);
-            cs.showText("CNPJ: 46.210.211/0001-60     Nome Fantasia: LP Kids");
-            cs.endText();
-
-            y -= (LINE_HEIGHT + 30);
-
-            // ── Identificador do contrato ──
-            cs.setStrokingColor(0.85f, 0.85f, 0.85f);
-            cs.moveTo(MARGIN_LEFT, y + 10);
-            cs.lineTo(pageWidth - MARGIN_RIGHT, y + 10);
-            cs.stroke();
-
-            y -= 10;
-            cs.beginText();
-            cs.setFont(fontBold, 9);
-            cs.setNonStrokingColor(0.4f, 0.4f, 0.4f);
-            cs.newLineAtOffset(MARGIN_LEFT, y);
-            cs.showText("Identificador do contrato:");
-            cs.endText();
-
-            y -= LINE_HEIGHT;
-            cs.beginText();
-            cs.setFont(PDType1Font.COURIER, 9);
-            cs.setNonStrokingColor(0.23f, 0.39f, 0.93f);
-            cs.newLineAtOffset(MARGIN_LEFT, y);
-            cs.showText(hash);
-            cs.endText();
-
-            y -= 24;
-
-            // ── Nota de rodapé ──
-            cs.beginText();
-            cs.setFont(fontItalic, 8);
-            cs.setNonStrokingColor(0.55f, 0.55f, 0.55f);
-            String note = "Documento gerado eletronicamente pelo sistema GerencIA.";
-            float noteWidth = fontItalic.getStringWidth(note) / 1000 * 8;
-            cs.newLineAtOffset((pageWidth - noteWidth) / 2, y);
-            cs.showText(note);
-            cs.endText();
-
-        } finally {
-            cs.close();
-        }
-    }
-
-    // ──────────────────────────────────────────────
-    //  Utilitários
-    // ──────────────────────────────────────────────
-
-    private File resolveTemplate() {
-        // Tenta carregar do filesystem (configurável via application.properties)
-        String path = templatePath.replace("classpath:", "");
-
-        // Primeiro tenta o caminho absoluto/relativo
-        File file = new File(templatePath);
-        if (file.exists()) return file;
-
-        // Tenta dentro de resources
-        file = new File("src/main/resources/" + path);
-        if (file.exists()) return file;
-
-        // Fallback: tenta dentro de templates/
-        file = new File("src/main/resources/templates/contrato_template.pdf");
-        if (file.exists()) return file;
-
-        throw new RuntimeException(
-                "Template do contrato nao encontrado. Configure 'app.contracts.template-path' " +
-                        "no application.properties ou coloque o arquivo em src/main/resources/templates/contrato_template.pdf"
-        );
-    }
-
-    private String generateHash(Contract contract) throws NoSuchAlgorithmException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(contract.getId());
-        sb.append(contract.getCreatedAt());
-        sb.append(contract.getCreatedIp());
-
-        if (contract.getGuardian() != null) {
-            sb.append(contract.getGuardian().getCpf());
+        } else {
+            // Fallback: renderiza o HTML do renderedContent
+            String rendered = contract.getRenderedContent();
+            if (rendered != null && !rendered.isBlank()) {
+                cur = renderHtmlFallback(doc, cur, rendered);
+            }
         }
 
+        // ── Campos de aceite no corpo ──────────────────────────────────────
+        if (tmpl != null && tmpl.getAcceptFields() != null && !tmpl.getAcceptFields().isEmpty()) {
+            Map<Long, String> respostas = buildRespostaMap(contract);
+            cur.y -= PARA_GAP * 2;
+            if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+            cur = writeAcceptFieldsInBody(doc, cur, tmpl.getAcceptFields(), respostas);
+        }
+
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Campos de aceite no corpo: todas opcoes, [X] na selecionada
+    // ════════════════════════════════════════════════════════════════════════
+
+    private Cursor writeAcceptFieldsInBody(PDDocument doc, Cursor cur,
+                                           List<ContractAcceptField> fields,
+                                           Map<Long, String> respostas) throws Exception {
+
+        cur = drawLine(doc, cur, "Declaracoes do Contratante:",
+                PDType1Font.HELVETICA_BOLD, 10.5f, DARK, MARGIN);
+        cur.y -= PARA_GAP / 2f;
+
+        for (ContractAcceptField field : fields) {
+            if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+
+            String resposta = respostas.getOrDefault(field.getId(), "");
+            boolean marcado = isTruthy(resposta);
+            String label;
+
+            if (field.getFieldType() == ContractAcceptField.AcceptFieldType.SIM_NAO) {
+                String sim = marcado ? "[X] Sim" : "[ ] Sim";
+                String nao = "false".equalsIgnoreCase(resposta.trim()) ? "[X] Nao" : "[ ] Nao";
+                label = safe(field.getLabel()) + "    " + sim + "    " + nao;
+            } else {
+                label = (marcado ? "[X] " : "[ ] ") + safe(field.getLabel());
+            }
+
+            for (String wl : wrapText(label, PDType1Font.HELVETICA, 9.5f, CONTENT_W - 4)) {
+                if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+                cur = drawLine(doc, cur, wl, PDType1Font.HELVETICA, 9.5f, MID, MARGIN);
+            }
+            cur.y -= 2;
+        }
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Pagina de assinaturas
+    // ════════════════════════════════════════════════════════════════════════
+
+    private void writeSignaturePage(PDDocument doc, Cursor cur,
+                                    Contract contract) throws Exception {
+
+        cur = hRule(doc, cur, RULE);
+        cur.y -= 14;
+        cur = lineCentered(doc, cur, "Registro de Assinaturas Eletronicas",
+                PDType1Font.HELVETICA_BOLD, 13f, DARK);
+        cur.y -= 2;
+        cur = lineCentered(doc, cur,
+                "Documento gerado pelo sistema GerenciA apos a conclusao das assinaturas.",
+                PDType1Font.HELVETICA_OBLIQUE, 8.5f, LIGHT);
+        cur.y -= 14;
+        cur = hRule(doc, cur, RULE);
+        cur.y -= 20;
+
+        // Participantes manuais (Responsavel + Testemunhas)
+        List<ContractParticipant> manuais = new ArrayList<>();
         for (ContractParticipant p : contract.getParticipants()) {
-            sb.append(p.getId());
-            sb.append(p.getSignedAt());
-            sb.append(p.getSignedIp());
+            if (p.getRole() != ParticipantRole.EMPRESA) manuais.add(p);
         }
 
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+        int witnessIdx = 1;
+        for (ContractParticipant p : manuais) {
+            String roleTitle = buildRoleTitle(p.getRole(), witnessIdx);
+            if (p.getRole() == ParticipantRole.TESTEMUNHA) witnessIdx++;
 
-        // Converte para hex
-        StringBuilder hex = new StringBuilder();
-        for (byte b : hashBytes) {
-            hex.append(String.format("%02x", b));
+            float boxH = blockHeight(p);
+            if (cur.y - boxH < BOTTOM_STOP) cur = newPage(doc);
+            cur = drawParticipantBlock(doc, cur, p, roleTitle, boxH);
+            cur.y -= 10;
         }
-        return hex.toString();
+
+        // Bloco fixo da contratada
+        cur.y -= 4;
+        float companyH = 62f;
+        if (cur.y - companyH < BOTTOM_STOP) cur = newPage(doc);
+        cur = drawCompanyBlock(doc, cur, companyH);
+        cur.y -= 10;
+
+        // Identificador
+        cur.y -= 10;
+        if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+        cur = hRule(doc, cur, RULE);
+        cur.y -= 10;
+        cur = drawLine(doc, cur, "Identificador: " + safe(contract.getHash()),
+                PDType1Font.COURIER, 7.5f, LIGHT, MARGIN);
+        cur.y -= 6;
+        lineCentered(doc, cur,
+                "Documento gerado eletronicamente pelo sistema GerenciA.",
+                PDType1Font.HELVETICA_OBLIQUE, 8f, LIGHT);
     }
 
-    /**
-     * Remove caracteres especiais que PDFBox não consegue renderizar
-     * com fontes Type1 padrão (acentos, cedilha, etc.).
-     */
-    private String sanitize(String text) {
-        if (text == null) return "";
-        return text
-                .replace("ã", "a").replace("Ã", "A")
-                .replace("á", "a").replace("Á", "A")
-                .replace("à", "a").replace("À", "A")
-                .replace("â", "a").replace("Â", "A")
-                .replace("é", "e").replace("É", "E")
-                .replace("ê", "e").replace("Ê", "E")
-                .replace("í", "i").replace("Í", "I")
-                .replace("ó", "o").replace("Ó", "O")
-                .replace("ô", "o").replace("Ô", "O")
-                .replace("õ", "o").replace("Õ", "O")
-                .replace("ú", "u").replace("Ú", "U")
-                .replace("ç", "c").replace("Ç", "C")
-                .replace("ñ", "n").replace("Ñ", "N");
-    }
+    // ════════════════════════════════════════════════════════════════════════
+    // Bloco de participante manual
+    // ════════════════════════════════════════════════════════════════════════
 
-    // ──────────────────────────────────────────────
-    //  DTO de retorno
-    // ──────────────────────────────────────────────
+    private Cursor drawParticipantBlock(PDDocument doc, Cursor cur,
+                                        ContractParticipant p,
+                                        String roleTitle,
+                                        float boxH) throws Exception {
+        float boxY  = cur.y - boxH;
+        float textX = MARGIN + 14f;
 
-    public static class GeneratedPdf {
-        private final String filePath;
-        private final String hash;
+        try (PDPageContentStream cs = new PDPageContentStream(
+                doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
 
-        public GeneratedPdf(String filePath, String hash) {
-            this.filePath = filePath;
-            this.hash = hash;
+            cs.setNonStrokingColor(BG_BOX[0], BG_BOX[1], BG_BOX[2]);
+            cs.addRect(MARGIN, boxY, CONTENT_W, boxH);
+            cs.fill();
+
+            float[] bar = barColor(p.getRole());
+            cs.setNonStrokingColor(bar[0], bar[1], bar[2]);
+            cs.addRect(MARGIN, boxY, 4f, boxH);
+            cs.fill();
+
+            float ty = cur.y - BLOCK_PAD;
+            ty = textInStream(cs, roleTitle, PDType1Font.HELVETICA_BOLD, 10.5f, textX, ty, DARK);
+            ty -= 3;
+            ty = textInStream(cs, "Nome:      " + safe(p.getName()),
+                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+            ty = textInStream(cs, "CPF:       " + safe(p.getCpf()),
+                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+
+            String email = resolveEmail(p);
+            if (email != null) {
+                ty = textInStream(cs, "E-mail:    " + email,
+                        PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+            }
+
+            ContractSignature sig = p.getSignature();
+            if (sig != null && sig.getSignedAt() != null) {
+                ty = textInStream(cs, "Data/Hora: " + sig.getSignedAt().format(DATE_FMT),
+                        PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+                if (sig.getSignedIp() != null) {
+                    ty = textInStream(cs, "IP:        " + sig.getSignedIp(),
+                            PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+                }
+            }
         }
 
-        public String getFilePath() { return filePath; }
-        public String getHash() { return hash; }
+        cur.y -= boxH + 2;
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Bloco fixo da contratada (LP Kids)
+    // ════════════════════════════════════════════════════════════════════════
+
+    private Cursor drawCompanyBlock(PDDocument doc, Cursor cur, float boxH) throws Exception {
+        float boxY  = cur.y - boxH;
+        float textX = MARGIN + 14f;
+
+        try (PDPageContentStream cs = new PDPageContentStream(
+                doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
+
+            cs.setNonStrokingColor(BG_BOX[0], BG_BOX[1], BG_BOX[2]);
+            cs.addRect(MARGIN, boxY, CONTENT_W, boxH);
+            cs.fill();
+            cs.setNonStrokingColor(C_EMPRESA[0], C_EMPRESA[1], C_EMPRESA[2]);
+            cs.addRect(MARGIN, boxY, 4f, boxH);
+            cs.fill();
+
+            float ty = cur.y - BLOCK_PAD;
+            ty = textInStream(cs, "Contratada", PDType1Font.HELVETICA_BOLD, 10.5f, textX, ty, DARK);
+            ty -= 3;
+            ty = textInStream(cs, "Nome Fantasia: LP Kids",
+                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+            ty = textInStream(cs, "Razao Social:  LUANA PEREIRA DOS SANTOS LIMA",
+                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+            textInStream(cs, "CNPJ:          46.210.211/0001-60",
+                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
+        }
+
+        cur.y -= boxH + 2;
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Fallback HTML
+    // ════════════════════════════════════════════════════════════════════════
+
+    private Cursor renderHtmlFallback(PDDocument doc, Cursor cur,
+                                      String rendered) throws Exception {
+        String plain = rendered
+                .replaceAll("</section>\\s*<section[^>]*>", "\n")
+                .replaceAll("<section[^>]*>|</section>", "\n")
+                .replaceAll("<h3>", "\n@@")
+                .replaceAll("</h3>", "\n")
+                .replaceAll("</?p>", "\n")
+                .replaceAll("<[^>]+>", "")
+                .replaceAll("(?m)^[ \t]+", "")
+                .replaceAll("\n{3,}", "\n\n")
+                .trim();
+
+        for (String raw : plain.split("\n")) {
+            String tok = raw.trim();
+            if (tok.isEmpty()) { cur.y -= PARA_GAP / 2f; continue; }
+
+            boolean isTitle = tok.startsWith("@@");
+            if (isTitle) { tok = tok.substring(2).trim(); cur.y -= PARA_GAP; }
+
+            PDType1Font font = isTitle ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA;
+            float       size = isTitle ? 10.5f : 10f;
+            float[]     col  = isTitle ? DARK : MID;
+
+            for (String wl : wrapText(tok, font, size, CONTENT_W)) {
+                if (cur.y < BOTTOM_STOP) cur = newPage(doc);
+                cur = drawLine(doc, cur, wl, font, size, col, MARGIN);
+            }
+            if (isTitle) cur.y -= PARA_GAP / 2f;
+        }
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Primitivos de layout
+    // ════════════════════════════════════════════════════════════════════════
+
+    /** Escreve texto num stream ja aberto. Retorna o y atual (nao avanca). */
+    private float textInStream(PDPageContentStream cs, String txt,
+                               PDType1Font font, float size,
+                               float x, float y, float[] col) throws Exception {
+        cs.beginText();
+        cs.setFont(font, size);
+        cs.setNonStrokingColor(col[0], col[1], col[2]);
+        cs.newLineAtOffset(x, y);
+        cs.showText(sanitize(txt));
+        cs.endText();
+        return y;
+    }
+
+    /** Abre stream, escreve uma linha, fecha e avanca cursor. */
+    private Cursor drawLine(PDDocument doc, Cursor cur, String txt,
+                            PDType1Font font, float size,
+                            float[] col, float x) throws Exception {
+        try (PDPageContentStream cs = new PDPageContentStream(
+                doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
+            textInStream(cs, txt, font, size, x, cur.y, col);
+        }
+        cur.y -= LINE_H;
+        return cur;
+    }
+
+    /** Texto centralizado. */
+    private Cursor lineCentered(PDDocument doc, Cursor cur, String txt,
+                                PDType1Font font, float size,
+                                float[] col) throws Exception {
+        float w = font.getStringWidth(sanitize(txt)) / 1000f * size;
+        float x = (PAGE_W - w) / 2f;
+        return drawLine(doc, cur, txt, font, size, col, x);
+    }
+
+    /** Linha horizontal. */
+    private Cursor hRule(PDDocument doc, Cursor cur, float[] col) throws Exception {
+        try (PDPageContentStream cs = new PDPageContentStream(
+                doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
+            cs.setStrokingColor(col[0], col[1], col[2]);
+            cs.setLineWidth(0.6f);
+            cs.moveTo(MARGIN, cur.y);
+            cs.lineTo(PAGE_W - MARGIN, cur.y);
+            cs.stroke();
+        }
+        cur.y -= 3;
+        return cur;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Gestao de paginas
+    // ════════════════════════════════════════════════════════════════════════
+
+    private static class Cursor {
+        PDPage page;
+        float  y;
+    }
+
+    private Cursor newPage(PDDocument doc) {
+        PDPage page = new PDPage(new PDRectangle(PAGE_W, PAGE_H));
+        doc.addPage(page);
+        Cursor c = new Cursor();
+        c.page = page;
+        c.y    = TOP_Y;
+        return c;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Auxiliares
+    // ════════════════════════════════════════════════════════════════════════
+
+    private float blockHeight(ContractParticipant p) {
+        int rows = 3; // titulo, nome, cpf
+        if (resolveEmail(p) != null) rows++;
+        ContractSignature sig = p.getSignature();
+        if (sig != null) {
+            if (sig.getSignedAt() != null) rows++;
+            if (sig.getSignedIp()  != null) rows++;
+        }
+        return BLOCK_PAD + (rows * LINE_H) + (rows * 2) + BLOCK_PAD;
+    }
+
+    private String resolveEmail(ContractParticipant p) {
+        if (p.getGuardian() != null && p.getGuardian().getEmail() != null)
+            return p.getGuardian().getEmail();
+        if (p.getUser() != null && p.getUser().getEmail() != null)
+            return p.getUser().getEmail();
+        return null;
+    }
+
+    private Map<String, String> parseVariablesData(String json) {
+        Map<String, String> map = new LinkedHashMap<>();
+        if (json == null || json.isBlank()) return map;
+        try {
+            TypeToken<Map<String, String>> token = new TypeToken<>(){};
+            Map<String, String> parsed = new Gson().fromJson(json, token);
+            if (parsed != null) map.putAll(parsed);
+        } catch (Exception ignored) {}
+        return map;
+    }
+
+    private Map<Long, String> buildRespostaMap(Contract contract) {
+        Map<Long, String> map = new LinkedHashMap<>();
+        if (contract.getParticipants() == null) return map;
+        for (ContractParticipant p : contract.getParticipants()) {
+            if (p.getRole() == ParticipantRole.EMPRESA) continue;
+            if (p.getAcceptResponses() == null) continue;
+            for (ContractAcceptResponse r : p.getAcceptResponses()) {
+                if (r.getAcceptField() != null) {
+                    map.put(r.getAcceptField().getId(), r.getResponseValue());
+                }
+            }
+            break; // apenas o primeiro signatario manual
+        }
+        return map;
+    }
+
+    private boolean isTruthy(String val) {
+        if (val == null) return false;
+        String v = val.trim().toLowerCase();
+        return v.equals("true") || v.equals("sim") || v.equals("1") || v.equals("x");
+    }
+
+    private String buildRoleTitle(ParticipantRole role, int witnessIdx) {
+        return switch (role) {
+            case RESPONSAVEL -> "Contratante";
+            case EMPRESA     -> "Contratada";
+            case TESTEMUNHA  -> "Testemunha " + witnessIdx;
+        };
+    }
+
+    private float[] barColor(ParticipantRole role) {
+        return switch (role) {
+            case RESPONSAVEL -> C_RESPONSAVEL;
+            case EMPRESA     -> C_EMPRESA;
+            case TESTEMUNHA  -> C_TESTEMUNHA;
+        };
+    }
+
+    private List<String> wrapText(String text, PDType1Font font,
+                                  float size, float maxW) throws Exception {
+        List<String> result = new ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder current = new StringBuilder();
+        for (String word : words) {
+            String candidate = current.isEmpty() ? word : current + " " + word;
+            float w = font.getStringWidth(sanitize(candidate)) / 1000f * size;
+            if (w > maxW && !current.isEmpty()) {
+                result.add(current.toString());
+                current = new StringBuilder(word);
+            } else {
+                current = new StringBuilder(candidate);
+            }
+        }
+        if (!current.isEmpty()) result.add(current.toString());
+        return result;
+    }
+
+    private String safe(String s) { return s != null ? s : ""; }
+
+    private String sanitize(String s) {
+        if (s == null) return "";
+        return s
+                .replace("ã","a").replace("Ã","A")
+                .replace("á","a").replace("Á","A")
+                .replace("à","a").replace("À","A")
+                .replace("â","a").replace("Â","A")
+                .replace("ä","a").replace("Ä","A")
+                .replace("é","e").replace("É","E")
+                .replace("ê","e").replace("Ê","E")
+                .replace("è","e").replace("È","E")
+                .replace("í","i").replace("Í","I")
+                .replace("ì","i").replace("Ì","I")
+                .replace("ó","o").replace("Ó","O")
+                .replace("ô","o").replace("Ô","O")
+                .replace("õ","o").replace("Õ","O")
+                .replace("ö","o").replace("Ö","O")
+                .replace("ú","u").replace("Ú","U")
+                .replace("ù","u").replace("Ù","U")
+                .replace("ü","u").replace("Ü","U")
+                .replace("ç","c").replace("Ç","C")
+                .replace("ñ","n").replace("Ñ","N")
+                .replace("\u2013","-").replace("\u2014","-")
+                .replace("\u00A0"," ")
+                .replace("\u2018","'").replace("\u2019","'")
+                .replace("\u201C","\"").replace("\u201D","\"");
     }
 }
