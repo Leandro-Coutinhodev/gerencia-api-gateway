@@ -16,23 +16,22 @@ public class AnamnesisTemplateField {
     private AnamnesisTemplate template;
 
     @Column(nullable = false)
-    private String label; // Ex: "Diagnósticos"
+    private String label;
 
     @Column(name = "field_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    private FieldType fieldType; // TEXT, TEXTAREA, DATE, CHECKBOX, FILE
+    private FieldType fieldType;
 
     @Column(name = "required")
     private boolean required = false;
 
     @Column(name = "position")
-    private Integer position; // Para ordenação drag-and-drop
+    private Integer position;
 
     @Column(name = "placeholder")
     private String placeholder;
 
-    // Para CHECKBOX: opções separadas por "|"
-    // Ex: "Sim|Não|Não sei"
+
     @Column(columnDefinition = "TEXT")
     private String options;
 

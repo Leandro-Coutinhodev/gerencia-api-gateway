@@ -23,12 +23,12 @@ public class Anamnesis {
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    // ✅ Novo: referência ao template usado
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id", nullable = false)
     private AnamnesisTemplate template;
 
-    // ✅ Novo: respostas dinâmicas
+
     @OneToMany(mappedBy = "anamnesis", fetch = FetchType.LAZY)
     private List<AnamnesisAnswer> answers = new ArrayList<>();
 

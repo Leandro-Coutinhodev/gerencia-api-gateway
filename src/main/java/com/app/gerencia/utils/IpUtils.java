@@ -4,10 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class IpUtils {
 
-    /**
-     * Extrai o IP real do cliente, considerando headers de proxy reverso
-     * (Nginx, Apache, Cloudflare, load balancers, etc.).
-     */
+    // Extrai ip
     public static String getClientIp(HttpServletRequest request) {
 
         String[] headers = {
@@ -22,8 +19,7 @@ public class IpUtils {
         for (String header : headers) {
             String ip = request.getHeader(header);
             if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-                // X-Forwarded-For pode ter vários IPs: "clientIp, proxy1, proxy2"
-                // O primeiro é o IP real do cliente
+
                 return ip.split(",")[0].trim();
             }
         }

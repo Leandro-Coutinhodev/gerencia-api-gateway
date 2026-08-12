@@ -39,7 +39,7 @@ public class SecretaryService {
         Secretary existingSecretary = secretaryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assistente não encontrado"));
 
-        // Atualiza apenas os campos modificáveis
+
         existingSecretary.setName(updatedSecretary.getName());
         existingSecretary.setCpf(updatedSecretary.getCpf());
         existingSecretary.setEmail(updatedSecretary.getEmail());

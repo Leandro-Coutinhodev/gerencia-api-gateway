@@ -1,8 +1,10 @@
 package com.app.gerencia.controllers;
 
+import com.app.gerencia.controllers.dto.SecretaryDTO;
 import com.app.gerencia.entities.Role;
 import com.app.gerencia.entities.Secretary;
 import com.app.gerencia.repository.RoleRepository;
+import com.app.gerencia.repository.SecretaryRepository;
 import com.app.gerencia.services.SecretaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,14 +25,22 @@ import java.util.Set;
 @RequestMapping("api-gateway/gerencia/")
 public class SecretaryController {
 
-    @Autowired
-    private SecretaryService secretaryService;
 
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private final SecretaryService secretaryService;
 
-    @Autowired
-    private RoleRepository roleRepository;
+
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    private final  RoleRepository roleRepository;
+
+    private final SecretaryRepository secretaryRepository;
+
+    public SecretaryController (SecretaryRepository secretaryRepository, SecretaryService secretaryService, BCryptPasswordEncoder bCryptPasswordEncoder, RoleRepository roleRepository){
+        this.secretaryRepository = secretaryRepository;
+        this.secretaryService = secretaryService;
+        this.passwordEncoder = bCryptPasswordEncoder;
+        this.roleRepository = roleRepository;
+    }
 
     @PostMapping("/secretary")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
@@ -150,4 +160,27 @@ public class SecretaryController {
             return new ResponseEntity<>("Erro ao deletar", HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/secretaries")
+    public ResponseEntity<List<SecretaryDTO>> getAll() {
+        List<SecretaryDTO> list = secretaryService.findAll()
+                .stream()
+                .map(SecretaryDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/secretaries/search")
+    public ResponseEntity<List<SecretaryDTO>> search(
+            @RequestParam(defaultValue = "") String q) {
+        List<SecretaryDTO> list = (q.isBlank()
+                ? secretaryRepository.findAll()
+                : secretaryRepository.findByNameOrEmailContaining(q))
+                .stream()
+                .map(SecretaryDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(list);
+    }
+
+
 }

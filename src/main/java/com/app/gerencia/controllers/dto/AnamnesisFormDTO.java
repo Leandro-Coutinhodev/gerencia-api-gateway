@@ -16,9 +16,7 @@ public class AnamnesisFormDTO {
     private AnamnesisTemplateDTO template;
     private List<AnswerDTO> existingAnswers;
 
-    // =========================================================
-    // Construtor principal — usado no getFormData
-    // =========================================================
+
 
     public AnamnesisFormDTO(Anamnesis anamnesis,
                             List<AnamnesisAnswer> existingAnswers,
@@ -34,17 +32,15 @@ public class AnamnesisFormDTO {
                 .toList();
     }
 
-    // =========================================================
-    // AnswerDTO — respostas já salvas, indexadas por fieldId
-    // =========================================================
+
 
     public static class AnswerDTO {
 
         private Long fieldId;
-        private String fieldType; // TEXT, TEXTAREA, DATE, CHECKBOX, FILE
-        private String value;     // null para FILE
-        private String fileName;  // preenchido apenas para FILE
-        private boolean hasFile;  // sinaliza ao frontend que existe arquivo salvo
+        private String fieldType;
+        private String value;
+        private String fileName;
+        private boolean hasFile;
 
         public static AnswerDTO fromEntity(AnamnesisAnswer answer) {
             AnswerDTO dto = new AnswerDTO();
@@ -63,7 +59,7 @@ public class AnamnesisFormDTO {
             return dto;
         }
 
-        // Getters
+
         public Long getFieldId()     { return fieldId; }
         public String getFieldType() { return fieldType; }
         public String getValue()     { return value; }
@@ -71,9 +67,7 @@ public class AnamnesisFormDTO {
         public boolean isHasFile()   { return hasFile; }
     }
 
-    // =========================================================
-    // Getters
-    // =========================================================
+
 
     public Long getAnamnesisId()                  { return anamnesisId; }
     public Character getStatus()                  { return status; }

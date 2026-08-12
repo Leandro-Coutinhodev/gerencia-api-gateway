@@ -33,7 +33,7 @@ public class ProfessionalService {
         Professional existingProfessional = professionalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assistente não encontrado"));
 
-        // Atualiza apenas os campos modificáveis
+
         existingProfessional.setName(updatedProfessional.getName());
         existingProfessional.setCpf(updatedProfessional.getCpf());
         existingProfessional.setEmail(updatedProfessional.getEmail());

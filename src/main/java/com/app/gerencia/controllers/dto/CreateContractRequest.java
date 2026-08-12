@@ -7,8 +7,8 @@ public class CreateContractRequest {
     private Long guardianId;
     private Long patientId;
 
-    private Boolean uploaded;      // se é upload
-    private Boolean hasWitnesses;  // se terá testemunhas
+    private Boolean uploaded;
+    private Boolean hasWitnesses;
 
     private List<WitnessRequest> witnesses;
 

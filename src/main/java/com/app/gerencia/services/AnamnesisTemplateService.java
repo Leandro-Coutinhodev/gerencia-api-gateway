@@ -45,7 +45,7 @@ public class AnamnesisTemplateService {
         template.setName(dto.name());
         template.setDescription(dto.description());
 
-        // Estratégia: remove os que não vieram no DTO, atualiza os existentes, adiciona novos
+
         Map<Long, AnamnesisTemplateField> existingById = template.getFields().stream()
                 .filter(f -> f.getId() != null)
                 .collect(Collectors.toMap(AnamnesisTemplateField::getId, f -> f));
@@ -54,19 +54,19 @@ public class AnamnesisTemplateService {
 
         for (AnamnesisTemplateRequestDTO.FieldRequestDTO fieldDTO : dto.fields()) {
             if (fieldDTO.id() != null && existingById.containsKey(fieldDTO.id())) {
-                // Atualiza campo existente
+
                 AnamnesisTemplateField existing = existingById.get(fieldDTO.id());
                 applyFieldDTO(existing, fieldDTO, template);
                 updatedFields.add(existing);
             } else {
-                // Novo campo
+
                 AnamnesisTemplateField newField = new AnamnesisTemplateField();
                 applyFieldDTO(newField, fieldDTO, template);
                 updatedFields.add(newField);
             }
         }
 
-        // orphanRemoval = true cuida da deleção dos que saíram
+        // orphanRemoval = true
         template.getFields().clear();
         template.getFields().addAll(updatedFields);
 

@@ -23,14 +23,14 @@ public class ContractNotificationService {
         this.emailService = emailService;
     }
 
-    /** Modo SEQUENCIAL: envia link apenas para o próximo pendente. */
+
     public void sendNextSequential(Long contractId) {
         participantRepository.findPendingOrderedByContractId(contractId)
                 .stream().findFirst()
                 .ifPresent(this::sendSignatureEmail);
     }
 
-    /** Modo PARALELO: envia para todos os pendentes de uma vez. */
+
     public void sendAllParallel(Long contractId) {
         participantRepository.findPendingOrderedByContractId(contractId)
                 .forEach(this::sendSignatureEmail);

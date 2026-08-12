@@ -2,9 +2,7 @@ package com.app.gerencia.entities;
 
 import jakarta.persistence.*;
 
-/**
- * Resposta de um participante a um campo de aceite.
- */
+
 @Entity
 @Table(name = "tb_contract_accept_response")
 public class ContractAcceptResponse {
@@ -22,14 +20,10 @@ public class ContractAcceptResponse {
     @JoinColumn(name = "contract_accept_field_id", nullable = false)
     private ContractAcceptField acceptField;
 
-    /**
-     * Valor da resposta serializado como String.
-     * true/false para CHECKBOX/SIM_NAO, texto livre para TEXT/DATE.
-     */
+
     @Column(name = "response_value", columnDefinition = "TEXT")
     private String responseValue;
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

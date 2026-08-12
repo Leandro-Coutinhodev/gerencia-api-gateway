@@ -24,13 +24,13 @@ public class PdfGenerator {
         }
 
         try {
-            // === Etapa 1: Gera o PDF principal (sem laudo) ===
+
             ByteArrayOutputStream basePdfStream = new ByteArrayOutputStream();
             createBaseReferralPdf(basePdfStream, selectedFieldsJson, patientName, patientCpf, sentAt, reportBytes != null);
 
             byte[] basePdf = basePdfStream.toByteArray();
 
-            // === Etapa 2: Se houver laudo, mescla com o relatório ===
+
             if (reportBytes != null && reportBytes.length > 0) {
                 return mergePdfs(basePdf, reportBytes);
             }
@@ -43,7 +43,7 @@ public class PdfGenerator {
         }
     }
 
-    // ====================== ETAPA 1 ======================
+
     private static void createBaseReferralPdf(
             OutputStream outputStream,
             String selectedFieldsJson,
@@ -59,7 +59,7 @@ public class PdfGenerator {
         PdfWriter.getInstance(document, outputStream);
         document.open();
 
-        // === CABEÇALHO COM LOGO ===
+
         String logoPath = "src/main/resources/static/logo.png";
         File logoFile = new File(logoPath);
         if (logoFile.exists()) {
@@ -71,14 +71,14 @@ public class PdfGenerator {
 
         document.add(Chunk.NEWLINE);
 
-        // === TÍTULO ===
+
         Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
         Paragraph title = new Paragraph("Relatório de Anamnese", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
         document.add(Chunk.NEWLINE);
 
-        // === INFORMAÇÕES DO PACIENTE ===
+
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
         Font textFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
 
@@ -102,7 +102,7 @@ public class PdfGenerator {
 
         document.add(patientTable);
 
-        // === SEÇÃO: Informações Gerais ===
+
         Paragraph infoHeader = new Paragraph("Informações Gerais", labelFont);
         infoHeader.setSpacingBefore(10);
         infoHeader.setSpacingAfter(5);
@@ -119,7 +119,7 @@ public class PdfGenerator {
         document.add(infoTable);
         document.add(Chunk.NEWLINE);
 
-        // === SEÇÃO: Histórico e Conduta ===
+
         Paragraph historyHeader = new Paragraph("Histórico e Conduta", labelFont);
         historyHeader.setSpacingBefore(10);
         historyHeader.setSpacingAfter(5);
@@ -139,7 +139,7 @@ public class PdfGenerator {
         document.add(historyTable);
         document.add(Chunk.NEWLINE);
 
-        // === SEÇÃO: Laudos (se houver) ===
+
         if (hasReports) {
             Paragraph reportHeader = new Paragraph("Laudos", labelFont);
             reportHeader.setSpacingBefore(15);
@@ -157,7 +157,7 @@ public class PdfGenerator {
         document.close();
     }
 
-    // ====================== ETAPA 2 ======================
+
     private static byte[] mergePdfs(byte[] mainPdf, byte[] reportPdf) throws IOException, DocumentException {
         ByteArrayOutputStream merged = new ByteArrayOutputStream();
         Document document = new Document();
@@ -168,21 +168,21 @@ public class PdfGenerator {
         try {
             document.open();
 
-            // adiciona primeiro o PDF base
+
             if (mainPdf != null && mainPdf.length > 0) {
                 PdfReader mainReader = new PdfReader(mainPdf);
                 readers.add(mainReader);
                 copy.addDocument(mainReader);
             }
 
-            // adiciona em seguida o(s) laudo(s)
+
             if (reportPdf != null && reportPdf.length > 0) {
                 PdfReader reportReader = new PdfReader(reportPdf);
                 readers.add(reportReader);
                 copy.addDocument(reportReader);
             }
 
-            // cria e adiciona a página de rodapé final
+
             ByteArrayOutputStream footerStream = new ByteArrayOutputStream();
             Document footerDoc = new Document(PageSize.A4);
             PdfWriter.getInstance(footerDoc, footerStream);
@@ -210,7 +210,7 @@ public class PdfGenerator {
         return merged.toByteArray();
     }
 
-    // ====================== HELPERS ======================
+
     private static void addField(PdfPTable table, JSONObject data, String key, String label, Font labelFont, Font textFont) {
         if (!data.has(key)) return;
 

@@ -3,9 +3,7 @@ package com.app.gerencia.entities;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Registro de auditoria da assinatura de um participante.
- */
+
 @Entity
 @Table(name = "tb_contract_signature")
 public class ContractSignature {
@@ -25,14 +23,14 @@ public class ContractSignature {
     @Column(name = "signed_ip", nullable = false)
     private String signedIp;
 
-    /** Hash SHA-256 do conteúdo renderizado no momento da assinatura. */
+
     @Column(name = "document_hash", nullable = false, columnDefinition = "TEXT")
     private String documentHash;
 
     @Column(name = "accepted_terms", nullable = false)
     private Boolean acceptedTerms = false;
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
+
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

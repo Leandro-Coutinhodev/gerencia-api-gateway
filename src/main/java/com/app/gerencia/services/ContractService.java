@@ -57,7 +57,7 @@ public class ContractService {
         this.pdfService = pdfService;
     }
 
-    // ── Fluxo 1: Gerar contrato via template + enviar para assinatura ──────
+
 
     @Transactional
     public Contract createForSigning(
@@ -89,7 +89,7 @@ public class ContractService {
         contract.setHash(generateHash(renderedContent));
         contract = contractRepository.save(contract);
 
-        // ── 1) Responsável (posição 1 — aguarda assinatura) ───────────────
+
         ContractParticipant responsavel = buildParticipant(
                 contract, ParticipantRole.RESPONSAVEL,
                 guardian.getName(), guardian.getEmail(), guardian.getCpf(),
@@ -97,26 +97,26 @@ public class ContractService {
         );
         participantRepository.save(responsavel);
 
-        // ── 2) Empresa (posição 2 — assinatura automática) ────────────────
+
         ContractParticipant empresa = buildParticipant(
                 contract, ParticipantRole.EMPRESA,
                 "LP Kids", "contato@lpkids.com.br", "46.210.211/0001-60",
                 2, null, null
         );
-        // Marca como assinado imediatamente — empresa sempre aceita
+
         empresa.setSigningStatus(ContractParticipant.SigningStatus.ASSINADO);
         participantRepository.save(empresa);
 
-        // Registra a assinatura automática da empresa
+
         ContractSignature empresaSignature = new ContractSignature();
         empresaSignature.setParticipant(empresa);
         empresaSignature.setSignedAt(LocalDateTime.now());
-        empresaSignature.setSignedIp(ip); // IP de quem criou o contrato
+        empresaSignature.setSignedIp(ip); // IP de quem criou
         empresaSignature.setDocumentHash(contract.getHash());
         empresaSignature.setAcceptedTerms(true);
         signatureRepository.save(empresaSignature);
 
-        // ── 3) Testemunhas (aguardam assinatura, se houver) ───────────────
+
         int order = 3;
         if (hasWitnesses && req.witnessUserIds() != null) {
             for (Long userId : req.witnessUserIds()) {
@@ -132,9 +132,7 @@ public class ContractService {
             }
         }
 
-        // ── Dispara envio conforme modo de assinatura ─────────────────────
-        // A empresa já está assinada, então o próximo pendente é sempre
-        // o responsável (ou testemunhas no modo paralelo).
+
         if (template.getSigningMode() == ContractTemplate.SigningMode.PARALELO) {
             notificationService.sendAllParallel(contract.getId());
         } else {
@@ -145,7 +143,6 @@ public class ContractService {
     }
 
 
-    // ── Fluxo 2: Anexar PDF já assinado externamente ───────────────────────
 
     @Transactional
     public Contract createExternal(
@@ -175,7 +172,6 @@ public class ContractService {
         return contractRepository.save(contract);
     }
 
-    // ── Assinatura de participante ─────────────────────────────────────────
 
     @Transactional
     public void sign(String token, SignContractRequestDTO req, String ip) {
@@ -202,11 +198,10 @@ public class ContractService {
                 throw new IllegalStateException("Ainda não é sua vez de assinar.");
         }
 
-        // ── Campos de aceite ──────────────────────────────────────────────
-        // NUNCA substituir a coleção — limpar e adicionar na lista existente
+
         if (req.acceptResponses() != null && !req.acceptResponses().isEmpty()) {
 
-            // Garante que a coleção foi inicializada pelo Hibernate
+
             if (participant.getAcceptResponses() == null) {
                 participant.setAcceptResponses(new ArrayList<>());
             }
@@ -226,7 +221,7 @@ public class ContractService {
             }
         }
 
-        // ── Assinatura ────────────────────────────────────────────────────
+       // Assinatura
         ContractSignature signature = new ContractSignature();
         signature.setParticipant(participant);
         signature.setSignedAt(LocalDateTime.now());
@@ -235,10 +230,12 @@ public class ContractService {
         signature.setAcceptedTerms(true);
         signatureRepository.save(signature);
 
+        participant.setSignature(signature);
+
         participant.setSigningStatus(ContractParticipant.SigningStatus.ASSINADO);
         participantRepository.save(participant);
 
-        // ── Verifica conclusão ────────────────────────────────────────────
+
         boolean allSigned = participantRepository
                 .findByContractIdOrderBySigningOrderAsc(contract.getId())
                 .stream().allMatch(ContractParticipant::isSigned);
@@ -269,7 +266,7 @@ public class ContractService {
         }
     }
 
-    // ── Visualização para tela de assinatura ──────────────────────────────
+
 
     public ContractSigningViewDTO getSigningView(String token) {
         ContractParticipant participant = participantRepository.findByToken(token)
@@ -292,7 +289,7 @@ public class ContractService {
         );
     }
 
-    // ── Leitura ────────────────────────────────────────────────────────────
+
 
     public List<ContractDTO> findAll() {
         return contractRepository.findAllByOrderByCreatedAtDesc()
@@ -307,20 +304,20 @@ public class ContractService {
     public byte[] getPdf(Long contractId) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new EntityNotFoundException("Contrato não encontrado"));
-        // PDF gerado (assinado eletronicamente)
+
         if (contract.getPdfData() != null) return contract.getPdfData();
-        // PDF externo (anexado)
+
         if (contract.getExternalPdfData() != null) return contract.getExternalPdfData();
         throw new IllegalStateException("PDF indisponível para este contrato.");
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+   // Funções auxiliares
 
     private Map<String, String> buildVariableMap(
             CreateContractForSigningRequestDTO req, Patient patient, Guardian guardian) {
         Map<String, String> map = new HashMap<>();
 
-        // Variáveis automáticas
+
         map.put("responsavel_nome", guardian.getName() != null ? guardian.getName() : "");
         map.put("responsavel_cpf", guardian.getCpf() != null ? guardian.getCpf() : "");
         map.put("responsavel_endereco", guardian.getAddressLine1() != null ? guardian.getAddressLine1() : "");
@@ -329,7 +326,7 @@ public class ContractService {
         map.put("data_contrato",
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDateTime.now()));
 
-        // Variáveis preenchidas manualmente (passo 4 do fluxo)
+
         if (req.variableValues() != null) {
             map.putAll(req.variableValues());
         }
@@ -337,10 +334,7 @@ public class ContractService {
         return map;
     }
 
-    /**
-     * Substitui {{variavel_nome}} pelo valor correspondente no conteúdo
-     * de cada cláusula, gerando o HTML final do contrato.
-     */
+
     private String renderContent(ContractTemplate template, Map<String, String> variables) {
         StringBuilder sb = new StringBuilder();
 

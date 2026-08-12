@@ -60,11 +60,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api-gateway/gerencia/recovery/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/contracts/*/pdf").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api-gateway/gerencia/anamnesis/*/field/*/file").permitAll()
+                        .requestMatchers("/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**").permitAll()
                         .requestMatchers(
                                 "/api-gateway/gerencia/anamnesis/form/**",
                                 "/api-gateway/gerencia/anamnesis/*/response"
                         ).permitAll()
                         .anyRequest().authenticated()
+
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt ->

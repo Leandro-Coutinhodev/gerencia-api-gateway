@@ -51,7 +51,7 @@ public class AnamnesisAnswerService {
             }
         }
 
-        // Itera a lista — getName() retorna "file_{fieldId}" corretamente
+
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 answers.add(buildFileAnswer(anamnesis, file));

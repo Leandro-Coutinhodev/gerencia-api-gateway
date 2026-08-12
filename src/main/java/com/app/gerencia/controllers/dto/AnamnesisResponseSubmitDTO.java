@@ -7,6 +7,6 @@ public record AnamnesisResponseSubmitDTO(
 ) {
     public record AnswerDTO(
             Long fieldId,
-            String value  // null se for FILE (vem via multipart separado)
+            String value
     ) {}
 }

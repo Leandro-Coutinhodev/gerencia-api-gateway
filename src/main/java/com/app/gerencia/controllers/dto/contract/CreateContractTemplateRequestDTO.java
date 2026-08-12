@@ -5,9 +5,9 @@ import java.util.List;
 public record CreateContractTemplateRequestDTO(
         String name,
         String description,
-        String type,               // ContractType enum name
-        String signingMode,        // SEQUENCIAL | PARALELO
-        String witnessConfig,      // OBRIGATORIO | OPCIONAL | NAO_UTILIZA
+        String type,
+        String signingMode,
+        String witnessConfig,
         Integer witnessCount,
         List<ClauseRequest> clauses,
         List<VariableRequest> variables,

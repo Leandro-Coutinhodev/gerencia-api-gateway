@@ -21,9 +21,7 @@ public record AnamnesisDTO(
         String formLink
 ) {
 
-    // =========================================================
-    // Construtor simples — findById, response
-    // =========================================================
+
 
     public AnamnesisDTO(Anamnesis anamnesis) {
         this(
@@ -40,9 +38,7 @@ public record AnamnesisDTO(
         );
     }
 
-    // =========================================================
-    // Construtor com token — findByPatient, findAll, generateLink
-    // =========================================================
+
 
     public AnamnesisDTO(Anamnesis anamnesis, String token, String host) {
         this(
@@ -59,9 +55,7 @@ public record AnamnesisDTO(
         );
     }
 
-    // =========================================================
-    // Helper privado
-    // =========================================================
+
 
     private static List<AnswerDTO> mapAnswers(Long anamnesisId, List<AnamnesisAnswer> answers) {
         if (answers == null || answers.isEmpty()) return Collections.emptyList();
@@ -74,9 +68,7 @@ public record AnamnesisDTO(
                 .toList();
     }
 
-    // =========================================================
-    // AnswerDTO interno
-    // =========================================================
+
 
     public record AnswerDTO(
             Long fieldId,

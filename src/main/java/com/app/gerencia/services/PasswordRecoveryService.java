@@ -31,7 +31,7 @@ public class PasswordRecoveryService {
         this.emailServiceRecovery = emailServiceRecovery;
     }
 
-    // 1. Solicitar recuperação
+
     public void requestRecovery(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
@@ -46,14 +46,14 @@ public class PasswordRecoveryService {
 
         recoveryRepository.save(recovery);
 
-        // Aqui você enviaria o email
+
         String link = host + "/restaurar-senha?token=" + recovery.getToken();
         emailServiceRecovery.sendRecoveryEmail(user.getEmail(), link);
 
 
     }
 
-    // 2. Resetar senha
+
     public void resetPassword(String token, String newPassword) {
         PasswordRecovery recovery = recoveryRepository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("Token inválido"));

@@ -2,10 +2,7 @@ package com.app.gerencia.entities;
 
 import jakarta.persistence.*;
 
-/**
- * Campo de aceite adicional exibido na tela de assinatura.
- * Ex: "Autoriza uso de imagem? ( ) Sim ( ) Não"
- */
+
 @Entity
 @Table(name = "tb_contract_accept_field")
 public class ContractAcceptField {
@@ -25,9 +22,7 @@ public class ContractAcceptField {
     @Column(nullable = false)
     private String label;
 
-    /**
-     * Tipo do campo de aceite: CHECKBOX, SIM_NAO, TEXT, DATE, SIGNATURE.
-     */
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AcceptFieldType fieldType;
@@ -37,7 +32,6 @@ public class ContractAcceptField {
 
     public enum AcceptFieldType { CHECKBOX, SIM_NAO, TEXT, DATE, SIGNATURE }
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

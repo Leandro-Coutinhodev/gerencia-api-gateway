@@ -16,7 +16,7 @@ public class AnamnesisTemplate {
     private Long id;
 
     @Column(nullable = false)
-    private String name; // Ex: "Anamnese Inicial TEA"
+    private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;

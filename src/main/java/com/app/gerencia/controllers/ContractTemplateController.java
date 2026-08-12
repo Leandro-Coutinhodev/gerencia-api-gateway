@@ -2,21 +2,14 @@ package com.app.gerencia.controllers;
 
 import com.app.gerencia.controllers.dto.contract.*;
 import com.app.gerencia.services.*;
-import com.app.gerencia.utils.IpUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
-// ── Contract Template Controller ──────────────────────────────────────
 
 @RestController
 @RequestMapping("/api-gateway/gerencia/contract-templates")
-@PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
+@PreAuthorize("hasAnyAuthority('SCOPE_SECRETARY', 'SCOPE_ADMIN')")
 public class ContractTemplateController {
 
     private final ContractTemplateService templateService;

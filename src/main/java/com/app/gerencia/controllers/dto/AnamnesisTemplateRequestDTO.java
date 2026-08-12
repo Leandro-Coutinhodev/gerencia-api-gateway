@@ -8,12 +8,12 @@ public record AnamnesisTemplateRequestDTO(
         List<FieldRequestDTO> fields
 ) {
     public record FieldRequestDTO(
-            Long id,          // null se novo, preenchido se edição
+            Long id,
             String label,
-            String fieldType, // "TEXT", "TEXTAREA", "DATE", "CHECKBOX", "FILE"
+            String fieldType,
             boolean required,
             int position,
             String placeholder,
-            String options    // Para checkbox: "Sim|Não"
+            String options
     ) {}
 }

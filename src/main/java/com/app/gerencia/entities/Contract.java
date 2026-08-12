@@ -7,9 +7,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Contrato gerado a partir de um modelo ou anexado externamente.
- */
+
 @Entity
 @Table(name = "tb_contract")
 public class Contract {
@@ -19,7 +17,6 @@ public class Contract {
     @Column(name = "contract_id")
     private Long id;
 
-    /** Modelo usado para gerar este contrato. Null = PDF anexado externamente. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contract_template_id")
     private ContractTemplate template;
@@ -37,21 +34,14 @@ public class Contract {
     @Column(nullable = false)
     private ContractStatus status = ContractStatus.RASCUNHO;
 
-    /**
-     * JSON com os valores preenchidos para as variáveis dinâmicas.
-     * Ex: {"valor_plano":"R$ 500,00","data_inicio":"01/01/2025"}
-     */
+
     @Column(name = "variables_data", columnDefinition = "TEXT")
     private String variablesData;
 
-    /**
-     * Conteúdo final do contrato com variáveis já substituídas.
-     * Gerado no momento do envio para assinatura.
-     */
+
     @Column(name = "rendered_content", columnDefinition = "TEXT")
     private String renderedContent;
 
-    /** PDF gerado com assinaturas eletrônicas (após conclusão). */
     @Lob
     @Column(name = "pdf_data")
     private byte[] pdfData;
@@ -59,9 +49,6 @@ public class Contract {
     @Column(name = "pdf_file_name")
     private String pdfFileName;
 
-    /**
-     * PDF anexado externamente (fluxo "já assinado").
-     */
     @Lob
     @Column(name = "external_pdf_data")
     private byte[] externalPdfData;
@@ -69,7 +56,6 @@ public class Contract {
     @Column(name = "external_pdf_file_name")
     private String externalPdfFileName;
 
-    /** Hash SHA-256 do conteúdo renderizado para integridade. */
     @Column(unique = true)
     private String hash;
 
@@ -85,7 +71,6 @@ public class Contract {
     @Column(name = "created_by_user_id")
     private Long createdByUserId;
 
-    /** Se este contrato usa testemunhas (relevante quando modelo é OPCIONAL). */
     @Column(name = "has_witnesses")
     private Boolean hasWitnesses = false;
 
@@ -94,20 +79,17 @@ public class Contract {
     @OrderBy("signingOrder ASC")
     private List<ContractParticipant> participants;
 
-    // ── Construtores ───────────────────────────────────────────────────────
 
     public Contract() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // ── Status helpers ─────────────────────────────────────────────────────
 
     public boolean isCompleted() {
         return ContractStatus.ASSINADO == this.status
                 || ContractStatus.ASSINADO_EXTERNAMENTE == this.status;
     }
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

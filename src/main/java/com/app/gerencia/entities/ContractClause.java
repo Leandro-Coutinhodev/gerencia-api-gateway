@@ -2,9 +2,7 @@ package com.app.gerencia.entities;
 
 import jakarta.persistence.*;
 
-/**
- * Cláusula individual de um modelo de contrato.
- */
+
 @Entity
 @Table(name = "tb_contract_clause")
 public class ContractClause {
@@ -27,7 +25,6 @@ public class ContractClause {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

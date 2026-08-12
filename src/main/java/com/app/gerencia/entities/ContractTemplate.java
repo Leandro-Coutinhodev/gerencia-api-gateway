@@ -5,11 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Modelo reutilizável de contrato.
- * Contém cláusulas, variáveis dinâmicas, campos de aceite e
- * configuração de testemunhas/ordem de assinatura.
- */
+
 @Entity
 @Table(name = "tb_contract_template")
 public class ContractTemplate {
@@ -25,9 +21,7 @@ public class ContractTemplate {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    /**
-     * Tipo do contrato: PRESTACAO_SERVICO, CONSENTIMENTO, LGPD, etc.
-     */
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ContractType type;
@@ -36,29 +30,17 @@ public class ContractTemplate {
     @Column(nullable = false)
     private ContractTemplateStatus status = ContractTemplateStatus.ATIVO;
 
-    /**
-     * Modo de assinatura dos participantes.
-     * SEQUENCIAL = um de cada vez em ordem.
-     * PARALELO   = todos recebem o link ao mesmo tempo.
-     */
+
     @Enumerated(EnumType.STRING)
     @Column(name = "signing_mode", nullable = false)
     private SigningMode signingMode = SigningMode.SEQUENCIAL;
 
-    /**
-     * Configuração de testemunhas para este modelo.
-     * OBRIGATORIO  = sempre exige testemunhas.
-     * OPCIONAL     = pergunta ao criar o contrato.
-     * NAO_UTILIZA  = sem testemunhas.
-     */
+
     @Enumerated(EnumType.STRING)
     @Column(name = "witness_config", nullable = false)
     private WitnessConfig witnessConfig = WitnessConfig.NAO_UTILIZA;
 
-    /**
-     * Quantidade de testemunhas requeridas.
-     * Relevante quando witnessConfig = OBRIGATORIO ou OPCIONAL.
-     */
+
     @Column(name = "witness_count")
     private Integer witnessCount = 0;
 
@@ -68,28 +50,27 @@ public class ContractTemplate {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ── Relacionamentos ────────────────────────────────────────────────────
 
-    /** Cláusulas do contrato, ordenadas por `order`. */
+
     @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("clauseOrder ASC")
     private List<ContractClause> clauses;
 
-    /** Variáveis dinâmicas ({{paciente_nome}}, {{valor_plano}}, etc.). */
+    // Variáveis dinâmicas
     @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContractVariable> variables;
 
-    /** Campos de aceite (checkbox, sim/não, texto, data, assinatura). */
+    // Campos de aceite
     @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("fieldOrder ASC")
     private List<ContractAcceptField> acceptFields;
 
-    /** Contratos gerados a partir deste modelo. */
+
     @OneToMany(mappedBy = "template", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Contract> contracts;
 
-    // ── Enums internos ─────────────────────────────────────────────────────
+
 
     public enum ContractTemplateStatus { ATIVO, INATIVO }
 
@@ -101,13 +82,11 @@ public class ContractTemplate {
         PRESTACAO_SERVICO, CONSENTIMENTO, LGPD, ANAMNESE, OUTRO
     }
 
-    // ── Construtores ───────────────────────────────────────────────────────
 
     public ContractTemplate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

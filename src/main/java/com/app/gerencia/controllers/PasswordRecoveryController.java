@@ -16,14 +16,14 @@ public class PasswordRecoveryController {
         this.service = service;
     }
 
-    // 1. Solicitar recuperação
+
     @PostMapping
     public ResponseEntity<Void> recovery(@RequestBody RecoveryRequest request) {
         service.requestRecovery(request.email());
         return ResponseEntity.ok().build();
     }
 
-    // 2. Resetar senha
+
     @PostMapping("/reset")
     public ResponseEntity<Void> reset(@RequestBody ResetPasswordRequest request) {
         service.resetPassword(request.token(), request.newPassword());

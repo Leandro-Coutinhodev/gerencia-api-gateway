@@ -33,7 +33,7 @@ public class AssistantService {
         Assistant existingAssistant = assistantRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assistente não encontrado"));
 
-        // Atualiza apenas os campos modificáveis
+
         existingAssistant.setName(updatedAssistant.getName());
         existingAssistant.setCpf(updatedAssistant.getCpf());
         existingAssistant.setEmail(updatedAssistant.getEmail());

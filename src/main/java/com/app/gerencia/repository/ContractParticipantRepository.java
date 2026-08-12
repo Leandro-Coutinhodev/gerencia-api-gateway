@@ -13,7 +13,7 @@ public interface ContractParticipantRepository extends JpaRepository<ContractPar
     Optional<ContractParticipant> findByToken(String token);
     List<ContractParticipant> findByContractIdOrderBySigningOrderAsc(Long contractId);
 
-    /** Próximo participante pendente de assinar na fila sequencial. */
+
     @Query("SELECT p FROM ContractParticipant p WHERE p.contract.id = :contractId " +
             "AND p.signingStatus = 'PENDENTE' ORDER BY p.signingOrder ASC")
     List<ContractParticipant> findPendingOrderedByContractId(Long contractId);

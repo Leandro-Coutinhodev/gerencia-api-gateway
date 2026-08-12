@@ -36,7 +36,7 @@ public class AnamnesisReferralService {
         this.emailService = emailService;
     }
 
-    // ── Criação do encaminhamento (feita pelo ADMIN) ────────────────────────
+
     @Transactional
     public AnamnesisReferral createReferral(Long senderId, AnamnesisReferralRequestDTO request) {
 
@@ -81,7 +81,7 @@ public class AnamnesisReferralService {
         return referralRepository.save(referral);
     }
 
-    // ── Atribuição de profissional (sem e-mail) ─────────────────────────────
+
     @Transactional
     public AnamnesisReferral assignProfessional(Long referralId, Long professionalId) {
         AnamnesisReferral referral = findById(referralId);
@@ -92,7 +92,7 @@ public class AnamnesisReferralService {
         return referralRepository.save(referral);
     }
 
-    // ── Atribuição de profissional (com e-mail + PDF) ───────────────────────
+
     @Transactional
     public AnamnesisReferral assignProfessionalEmail(Long referralId, Long professionalId) {
         AnamnesisReferral referral = findById(referralId);
@@ -136,7 +136,7 @@ public class AnamnesisReferralService {
         return saved;
     }
 
-    // ── Leitura ───────────────────────────────────────────────────────────────
+
     public AnamnesisReferral findById(Long id) {
         return referralRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -148,7 +148,7 @@ public class AnamnesisReferralService {
                 .orElse(Collections.emptyList());
     }
 
-    // Usado pelo próprio profissional para ver o que foi encaminhado a ele
+
     public List<AnamnesisReferral> findByProfessionalId(Long id) {
         return referralRepository.findAllByProfessionalIdIsNotNullAndProfessionalId(id);
     }

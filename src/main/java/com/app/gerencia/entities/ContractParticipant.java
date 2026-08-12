@@ -5,10 +5,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.util.List;
 
-/**
- * Participante de um contrato na fila de assinatura.
- * Pode ser: RESPONSAVEL, EMPRESA ou TESTEMUNHA.
- */
+
 @Entity
 @Table(name = "tb_contract_participant")
 public class ContractParticipant {
@@ -27,10 +24,7 @@ public class ContractParticipant {
     @Column(nullable = false)
     private ParticipantRole role;
 
-    /**
-     * Dados desnormalizados para rastreabilidade.
-     * Não dependem de Guardian/User existir no futuro.
-     */
+
     @Column(nullable = false)
     private String name;
 
@@ -39,11 +33,11 @@ public class ContractParticipant {
 
     private String cpf;
 
-    /** Ordem na fila de assinatura. */
+
     @Column(name = "signing_order", nullable = false)
     private Integer signingOrder;
 
-    /** Token UUID para link de assinatura único. */
+    // Token UUID para link de assinatura
     @Column(unique = true, nullable = false)
     private String token;
 
@@ -51,7 +45,6 @@ public class ContractParticipant {
     @Column(name = "signing_status", nullable = false)
     private SigningStatus signingStatus = SigningStatus.PENDENTE;
 
-    // ── Referências opcionais ao sistema ──────────────────────────────────
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guardian_id")
@@ -61,17 +54,17 @@ public class ContractParticipant {
     @JoinColumn(name = "user_id")
     private User user;
 
-    /** Assinatura registrada (criada quando o participante assina). */
+
     @OneToOne(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
     private ContractSignature signature;
 
-    /** Respostas aos campos de aceite registradas nesta assinatura. */
+
     @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContractAcceptResponse> acceptResponses;
 
     public enum SigningStatus { PENDENTE, ASSINADO, REJEITADO }
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
+
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

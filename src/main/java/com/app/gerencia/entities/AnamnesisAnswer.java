@@ -23,7 +23,7 @@ public class AnamnesisAnswer {
     @Column(columnDefinition = "TEXT")
     private String value;
 
-    // Para FILE (PDF merge continua igual)
+
     @Lob
     @Column(name = "file_data")
     private byte[] fileData;

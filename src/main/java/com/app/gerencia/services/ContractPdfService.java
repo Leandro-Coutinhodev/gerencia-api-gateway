@@ -13,17 +13,11 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * Gera o PDF final do contrato apos todas as assinaturas.
- *
- * Estrutura:
- *   Paginas 1..N → Clausulas + campos de aceite (corpo do contrato)
- *   Ultima pagina → Registro de Assinaturas Eletronicas
- */
+
 @Service
 public class ContractPdfService {
 
-    // ── Layout ──────────────────────────────────────────────────────────────
+
     private static final float PAGE_W      = PDRectangle.A4.getWidth();
     private static final float PAGE_H      = PDRectangle.A4.getHeight();
     private static final float MARGIN      = 60f;
@@ -37,19 +31,12 @@ public class ContractPdfService {
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy 'as' HH:mm");
 
-    // ── Cores ────────────────────────────────────────────────────────────────
     private static final float[] DARK   = {0.10f, 0.10f, 0.10f};
     private static final float[] MID    = {0.28f, 0.28f, 0.28f};
     private static final float[] LIGHT  = {0.42f, 0.42f, 0.42f};
     private static final float[] RULE   = {0.78f, 0.78f, 0.78f};
     private static final float[] BG_BOX = {0.965f, 0.965f, 0.975f};
-    private static final float[] C_RESPONSAVEL = {0.22f, 0.38f, 0.92f};
-    private static final float[] C_EMPRESA     = {0.12f, 0.54f, 0.12f};
-    private static final float[] C_TESTEMUNHA  = {0.84f, 0.54f, 0.10f};
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Entrada publica
-    // ════════════════════════════════════════════════════════════════════════
 
     public byte[] generateFinalPdf(Contract contract) throws Exception {
         try (PDDocument doc = new PDDocument()) {
@@ -63,9 +50,6 @@ public class ContractPdfService {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Corpo do contrato (clausulas + campos de aceite)
-    // ════════════════════════════════════════════════════════════════════════
 
     private Cursor writeContractContent(PDDocument doc, Cursor cur,
                                         Contract contract) throws Exception {
@@ -81,7 +65,7 @@ public class ContractPdfService {
 
         ContractTemplate tmpl = contract.getTemplate();
 
-        // ── Clausulas ──────────────────────────────────────────────────────
+
         if (tmpl != null && tmpl.getClauses() != null && !tmpl.getClauses().isEmpty()) {
 
             Map<String, String> vars = parseVariablesData(contract.getVariablesData());
@@ -125,7 +109,7 @@ public class ContractPdfService {
             }
         }
 
-        // ── Campos de aceite no corpo ──────────────────────────────────────
+        // Campos aceite
         if (tmpl != null && tmpl.getAcceptFields() != null && !tmpl.getAcceptFields().isEmpty()) {
             Map<Long, String> respostas = buildRespostaMap(contract);
             cur.y -= PARA_GAP * 2;
@@ -135,10 +119,6 @@ public class ContractPdfService {
 
         return cur;
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Campos de aceite no corpo: todas opcoes, [X] na selecionada
-    // ════════════════════════════════════════════════════════════════════════
 
     private Cursor writeAcceptFieldsInBody(PDDocument doc, Cursor cur,
                                            List<ContractAcceptField> fields,
@@ -172,9 +152,6 @@ public class ContractPdfService {
         return cur;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Pagina de assinaturas
-    // ════════════════════════════════════════════════════════════════════════
 
     private void writeSignaturePage(PDDocument doc, Cursor cur,
                                     Contract contract) throws Exception {
@@ -228,9 +205,6 @@ public class ContractPdfService {
                 PDType1Font.HELVETICA_OBLIQUE, 8f, LIGHT);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Bloco de participante manual
-    // ════════════════════════════════════════════════════════════════════════
 
     private Cursor drawParticipantBlock(PDDocument doc, Cursor cur,
                                         ContractParticipant p,
@@ -242,14 +216,11 @@ public class ContractPdfService {
         try (PDPageContentStream cs = new PDPageContentStream(
                 doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
 
-            cs.setNonStrokingColor(BG_BOX[0], BG_BOX[1], BG_BOX[2]);
-            cs.addRect(MARGIN, boxY, CONTENT_W, boxH);
-            cs.fill();
 
-            float[] bar = barColor(p.getRole());
-            cs.setNonStrokingColor(bar[0], bar[1], bar[2]);
-            cs.addRect(MARGIN, boxY, 4f, boxH);
-            cs.fill();
+            cs.setStrokingColor(RULE[0], RULE[1], RULE[2]);
+            cs.setLineWidth(0.7f);
+            cs.addRect(MARGIN, boxY, CONTENT_W, boxH);
+            cs.stroke();
 
             float ty = cur.y - BLOCK_PAD;
             ty = textInStream(cs, roleTitle, PDType1Font.HELVETICA_BOLD, 10.5f, textX, ty, DARK);
@@ -280,9 +251,6 @@ public class ContractPdfService {
         return cur;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Bloco fixo da contratada (LP Kids)
-    // ════════════════════════════════════════════════════════════════════════
 
     private Cursor drawCompanyBlock(PDDocument doc, Cursor cur, float boxH) throws Exception {
         float boxY  = cur.y - boxH;
@@ -291,31 +259,23 @@ public class ContractPdfService {
         try (PDPageContentStream cs = new PDPageContentStream(
                 doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
 
-            cs.setNonStrokingColor(BG_BOX[0], BG_BOX[1], BG_BOX[2]);
+            cs.setStrokingColor(RULE[0], RULE[1], RULE[2]);
+            cs.setLineWidth(0.7f);
             cs.addRect(MARGIN, boxY, CONTENT_W, boxH);
-            cs.fill();
-            cs.setNonStrokingColor(C_EMPRESA[0], C_EMPRESA[1], C_EMPRESA[2]);
-            cs.addRect(MARGIN, boxY, 4f, boxH);
-            cs.fill();
+            cs.stroke();
 
             float ty = cur.y - BLOCK_PAD;
             ty = textInStream(cs, "Contratada", PDType1Font.HELVETICA_BOLD, 10.5f, textX, ty, DARK);
             ty -= 3;
-            ty = textInStream(cs, "Nome Fantasia: LP Kids",
+            ty = textInStream(cs, "Nome: LP – EDUCAÇÃO FÍSICA LTDA",
                     PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
-            ty = textInStream(cs, "Razao Social:  LUANA PEREIRA DOS SANTOS LIMA",
-                    PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
-            textInStream(cs, "CNPJ:          46.210.211/0001-60",
+            textInStream(cs, "CNPJ:          44.535.836/0001-66",
                     PDType1Font.HELVETICA, 9.5f, textX, ty - LINE_H, MID);
         }
 
         cur.y -= boxH + 2;
         return cur;
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Fallback HTML
-    // ════════════════════════════════════════════════════════════════════════
 
     private Cursor renderHtmlFallback(PDDocument doc, Cursor cur,
                                       String rendered) throws Exception {
@@ -350,11 +310,7 @@ public class ContractPdfService {
         return cur;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Primitivos de layout
-    // ════════════════════════════════════════════════════════════════════════
 
-    /** Escreve texto num stream ja aberto. Retorna o y atual (nao avanca). */
     private float textInStream(PDPageContentStream cs, String txt,
                                PDType1Font font, float size,
                                float x, float y, float[] col) throws Exception {
@@ -367,7 +323,7 @@ public class ContractPdfService {
         return y;
     }
 
-    /** Abre stream, escreve uma linha, fecha e avanca cursor. */
+
     private Cursor drawLine(PDDocument doc, Cursor cur, String txt,
                             PDType1Font font, float size,
                             float[] col, float x) throws Exception {
@@ -379,7 +335,7 @@ public class ContractPdfService {
         return cur;
     }
 
-    /** Texto centralizado. */
+
     private Cursor lineCentered(PDDocument doc, Cursor cur, String txt,
                                 PDType1Font font, float size,
                                 float[] col) throws Exception {
@@ -388,7 +344,7 @@ public class ContractPdfService {
         return drawLine(doc, cur, txt, font, size, col, x);
     }
 
-    /** Linha horizontal. */
+
     private Cursor hRule(PDDocument doc, Cursor cur, float[] col) throws Exception {
         try (PDPageContentStream cs = new PDPageContentStream(
                 doc, cur.page, PDPageContentStream.AppendMode.APPEND, true)) {
@@ -402,9 +358,6 @@ public class ContractPdfService {
         return cur;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Gestao de paginas
-    // ════════════════════════════════════════════════════════════════════════
 
     private static class Cursor {
         PDPage page;
@@ -420,12 +373,8 @@ public class ContractPdfService {
         return c;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Auxiliares
-    // ════════════════════════════════════════════════════════════════════════
-
     private float blockHeight(ContractParticipant p) {
-        int rows = 3; // titulo, nome, cpf
+        int rows = 3;
         if (resolveEmail(p) != null) rows++;
         ContractSignature sig = p.getSignature();
         if (sig != null) {
@@ -465,7 +414,7 @@ public class ContractPdfService {
                     map.put(r.getAcceptField().getId(), r.getResponseValue());
                 }
             }
-            break; // apenas o primeiro signatario manual
+            break;
         }
         return map;
     }
@@ -484,13 +433,7 @@ public class ContractPdfService {
         };
     }
 
-    private float[] barColor(ParticipantRole role) {
-        return switch (role) {
-            case RESPONSAVEL -> C_RESPONSAVEL;
-            case EMPRESA     -> C_EMPRESA;
-            case TESTEMUNHA  -> C_TESTEMUNHA;
-        };
-    }
+
 
     private List<String> wrapText(String text, PDType1Font font,
                                   float size, float maxW) throws Exception {

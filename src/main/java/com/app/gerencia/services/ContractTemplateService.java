@@ -18,7 +18,7 @@ public class ContractTemplateService {
         this.templateRepository = templateRepository;
     }
 
-    // ── CRUD ───────────────────────────────────────────────────────────────
+
 
     @Transactional
     public ContractTemplateDTO create(CreateContractTemplateRequestDTO req) {
@@ -43,7 +43,7 @@ public class ContractTemplateService {
                 .filter(t -> !t.getId().equals(id))
                 .ifPresent(t -> { throw new IllegalArgumentException("Nome já utilizado por outro modelo"); });
 
-        // Limpa coleções antes de reaplicar (orphanRemoval cuida dos deletes)
+
         template.getClauses().clear();
         template.getVariables().clear();
         template.getAcceptFields().clear();
@@ -80,7 +80,7 @@ public class ContractTemplateService {
         templateRepository.save(t);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+
 
     private void applyRequest(ContractTemplate template, CreateContractTemplateRequestDTO req) {
         template.setName(req.name().trim());
@@ -91,7 +91,7 @@ public class ContractTemplateService {
         template.setWitnessCount(
                 req.witnessCount() != null ? req.witnessCount() : 0);
 
-        // Cláusulas
+
         if (req.clauses() != null) {
             List<ContractClause> clauses = req.clauses().stream().map(c -> {
                 ContractClause clause = new ContractClause();
@@ -105,7 +105,7 @@ public class ContractTemplateService {
             else template.setClauses(clauses);
         }
 
-        // Variáveis dinâmicas
+
         if (req.variables() != null) {
             List<ContractVariable> variables = req.variables().stream().map(v -> {
                 ContractVariable variable = new ContractVariable();
@@ -121,7 +121,7 @@ public class ContractTemplateService {
             else template.setVariables(variables);
         }
 
-        // Campos de aceite
+
         if (req.acceptFields() != null) {
             List<ContractAcceptField> fields = req.acceptFields().stream().map(f -> {
                 ContractAcceptField field = new ContractAcceptField();

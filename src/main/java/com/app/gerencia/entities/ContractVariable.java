@@ -2,11 +2,7 @@ package com.app.gerencia.entities;
 
 import jakarta.persistence.*;
 
-/**
- * Variável dinâmica de um modelo de contrato.
- * Ex: {{paciente_nome}}, {{valor_plano}}, {{data_inicio}}.
- * O nome deve corresponder exatamente ao placeholder usado nas cláusulas.
- */
+
 @Entity
 @Table(name = "tb_contract_variable")
 public class ContractVariable {
@@ -20,20 +16,14 @@ public class ContractVariable {
     @JoinColumn(name = "contract_template_id", nullable = false)
     private ContractTemplate template;
 
-    /**
-     * Nome da variável sem chaves: "paciente_nome", "valor_plano".
-     * O placeholder nas cláusulas será {{paciente_nome}}.
-     */
+
     @Column(name = "variable_name", nullable = false)
     private String variableName;
 
     @Column(name = "description")
     private String description;
 
-    /**
-     * Tipo do campo de entrada para preenchimento:
-     * TEXT, NUMBER, DATE, CURRENCY.
-     */
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VariableType type;
@@ -41,16 +31,13 @@ public class ContractVariable {
     @Column(nullable = false)
     private Boolean required = true;
 
-    /**
-     * Indica se é uma variável preenchida automaticamente pelo sistema
-     * (responsavel_nome, paciente_nome, data_contrato...) ou pelo usuário.
-     */
+
     @Column(name = "auto_filled")
     private Boolean autoFilled = false;
 
     public enum VariableType { TEXT, NUMBER, DATE, CURRENCY }
 
-    // ── Getters/Setters ────────────────────────────────────────────────────
+
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
