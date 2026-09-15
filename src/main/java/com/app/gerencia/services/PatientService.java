@@ -2,6 +2,7 @@ package com.app.gerencia.services;
 
 import com.app.gerencia.entities.Guardian;
 import com.app.gerencia.entities.Patient;
+import com.app.gerencia.repository.ChargeRepository;
 import com.app.gerencia.repository.GuardianRepository;
 import com.app.gerencia.repository.PatientRepository;
 import jakarta.transaction.Transactional;
@@ -19,6 +20,9 @@ public class PatientService {
 
     @Autowired
     private GuardianRepository guardianRepository;
+
+    @Autowired
+    private ChargeRepository chargeRepository;
 
     public String save(Patient patient) {
         if (patient.getGuardian() != null) {
@@ -90,6 +94,10 @@ public class PatientService {
 
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+
+        if (chargeRepository.existsByPatientId(id)) {
+            throw new IllegalStateException("Paciente possui cobranças financeiras associadas e não pode ser excluído");
+        }
 
         patientRepository.delete(patient);
 
