@@ -15,6 +15,7 @@ public interface AnamnesisReferralRepository extends JpaRepository<AnamnesisRefe
     List<AnamnesisReferral> findAllByAnamnesisIdIn(List<Long> anamnesisIds);
     Optional<List<AnamnesisReferral>> findAllByProfessionalIdIsNotNull();
     List<AnamnesisReferral> findAllByProfessionalIdIsNotNullAndProfessionalId(Long professionalId);
+    List<AnamnesisReferral> findByAnamnesis_StatusInOrderBySentAtDesc(List<Character> statuses);
 
 }
 
