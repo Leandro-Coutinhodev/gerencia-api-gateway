@@ -9,6 +9,7 @@ import com.app.gerencia.repository.AnamnesisRepository;
 import com.app.gerencia.repository.AppointmentRepository;
 import com.app.gerencia.repository.ContractRepository;
 import com.app.gerencia.repository.FrequencyRepository;
+import com.app.gerencia.repository.ChargeRepository;
 import com.app.gerencia.repository.GuardianRepository;
 import com.app.gerencia.repository.PatientRepository;
 import com.app.gerencia.repository.RecordRepository;
@@ -46,6 +47,8 @@ public class PatientService {
 
     @Autowired
     private ContractRepository contractRepository;
+    @Autowired
+    private ChargeRepository chargeRepository;
 
     public String save(Patient patient) {
         if (patient.getGuardian() != null) {
@@ -131,6 +134,11 @@ public class PatientService {
 
         // Fichas de atendimento (só depois de remover agendamentos/frequências, que as referenciam)
         recordRepository.deleteAllByPatientId(id);
+        if (chargeRepository.existsByPatientId(id)) {
+            throw new IllegalStateException("Paciente possui cobranças financeiras associadas e não pode ser excluído");
+        }
+
+        patientRepository.delete(patient);
 
         // Anamneses: as respostas não têm cascade a partir de Anamnesis, então são removidas
         // explicitamente; o encaminhamento (referral) já cascateia via JPA ao remover a anamnese.
