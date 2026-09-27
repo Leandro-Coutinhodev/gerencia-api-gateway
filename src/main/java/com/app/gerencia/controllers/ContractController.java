@@ -5,6 +5,7 @@ import com.app.gerencia.controllers.dto.contract.CreateContractForSigningRequest
 import com.app.gerencia.controllers.dto.contract.CreateExternalContractRequestDTO;
 import com.app.gerencia.controllers.dto.contract.SignContractRequestDTO;
 import com.app.gerencia.services.ContractService;
+import com.app.gerencia.utils.FileNaming;
 import com.app.gerencia.utils.IpUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
@@ -107,7 +108,7 @@ public class ContractController {
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "inline; filename=\"contrato_" + contractId + ".pdf\"")
+                            "inline; filename=\"" + FileNaming.generate("contrato", "pdf") + "\"")
                     .body(pdf);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

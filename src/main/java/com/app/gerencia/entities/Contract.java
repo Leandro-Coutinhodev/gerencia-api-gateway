@@ -4,6 +4,8 @@ import com.app.gerencia.enums.ContractStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -74,6 +76,19 @@ public class Contract {
     @Column(name = "has_witnesses")
     private Boolean hasWitnesses = false;
 
+    // Dados financeiros — usados para controle financeiro e relatórios
+    @Column(name = "contract_value", precision = 12, scale = 2)
+    private BigDecimal contractValue;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "payment_date")
+    private LocalDate paymentDate;
+
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     @OrderBy("signingOrder ASC")
@@ -141,6 +156,18 @@ public class Contract {
 
     public Boolean getHasWitnesses() { return hasWitnesses; }
     public void setHasWitnesses(Boolean hasWitnesses) { this.hasWitnesses = hasWitnesses; }
+
+    public BigDecimal getContractValue() { return contractValue; }
+    public void setContractValue(BigDecimal contractValue) { this.contractValue = contractValue; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public LocalDate getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(LocalDate paymentDate) { this.paymentDate = paymentDate; }
 
     public List<ContractParticipant> getParticipants() { return participants; }
     public void setParticipants(List<ContractParticipant> participants) { this.participants = participants; }

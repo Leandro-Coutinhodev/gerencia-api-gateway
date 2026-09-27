@@ -5,6 +5,8 @@ import com.app.gerencia.entities.ContractParticipant;
 import com.app.gerencia.enums.ContractStatus;
 import com.app.gerencia.enums.ParticipantRole;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,6 +22,10 @@ public record ContractDTO(
         Boolean hasWitnesses,
         LocalDateTime createdAt,
         String hash,
+        BigDecimal contractValue,
+        LocalDate startDate,
+        LocalDate endDate,
+        LocalDate paymentDate,
         List<ParticipantDTO> participants
 ) {
     public static ContractDTO fromEntity(Contract c) {
@@ -35,6 +41,10 @@ public record ContractDTO(
                 c.getHasWitnesses(),
                 c.getCreatedAt(),
                 c.getHash(),
+                c.getContractValue(),
+                c.getStartDate(),
+                c.getEndDate(),
+                c.getPaymentDate(),
                 c.getParticipants() == null ? List.of() :
                         c.getParticipants().stream().map(ParticipantDTO::fromEntity).toList()
         );

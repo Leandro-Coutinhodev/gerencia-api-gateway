@@ -10,14 +10,20 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import com.app.gerencia.utils.FileNaming;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -53,8 +59,14 @@ public class AnamnesisAnswerService {
 
 
         if (files != null && !files.isEmpty()) {
+            // Agrupa os arquivos por campo — um mesmo campo FILE pode ter vários PDFs
+            // selecionados, que devem ser mesclados em um único arquivo salvo no banco.
+            Map<Long, List<MultipartFile>> filesByField = new LinkedHashMap<>();
             for (MultipartFile file : files) {
-                answers.add(buildFileAnswer(anamnesis, file));
+                filesByField.computeIfAbsent(extractFieldId(file), k -> new ArrayList<>()).add(file);
+            }
+            for (Map.Entry<Long, List<MultipartFile>> entry : filesByField.entrySet()) {
+                answers.add(buildFileAnswer(anamnesis, entry.getKey(), entry.getValue()));
             }
         }
 
@@ -99,11 +111,11 @@ public class AnamnesisAnswerService {
         return answer;
     }
 
+    // Recebe todos os arquivos selecionados para um mesmo campo FILE. Quando há mais de um,
+    // mescla todos em um único PDF antes de salvar (um campo = um arquivo no banco).
     private AnamnesisAnswer buildFileAnswer(Anamnesis anamnesis,
-                                            MultipartFile file) throws IOException {
-        // Convenção do multipart name: "file_{fieldId}" → ex: "file_7"
-        Long fieldId = extractFieldId(file);
-
+                                            Long fieldId,
+                                            List<MultipartFile> files) throws IOException {
         AnamnesisTemplateField field = anamnesis.getTemplate().getFields().stream()
                 .filter(f -> f.getId().equals(fieldId))
                 .findFirst()
@@ -115,16 +127,47 @@ public class AnamnesisAnswerService {
                     "Campo " + field.getLabel() + " não é do tipo FILE");
         }
 
-        if (!isPdf(file)) {
-            throw new IllegalArgumentException("Apenas arquivos PDF são aceitos no campo: " + field.getLabel());
+        for (MultipartFile file : files) {
+            if (!isPdf(file)) {
+                throw new IllegalArgumentException(
+                        "Apenas arquivos PDF são aceitos no campo: " + field.getLabel());
+            }
         }
+
+        // Nome gerado (data + token aleatório) — nunca o nome original do arquivo, que pode
+        // conter o nome da pessoa (ex: "cv_Leandro.pdf").
+        byte[] fileData = files.size() == 1 ? files.get(0).getBytes() : mergePdfs(files);
+        String fileName = FileNaming.generate("laudo", "pdf");
 
         AnamnesisAnswer answer = new AnamnesisAnswer();
         answer.setAnamnesis(anamnesis);
         answer.setField(field);
-        answer.setFileData(file.getBytes());
-        answer.setFileName(sanitizeFileName(file.getOriginalFilename()));
+        answer.setFileData(fileData);
+        answer.setFileName(fileName);
         return answer;
+    }
+
+    // Mescla vários PDFs em um único documento, na ordem em que foram selecionados
+    private byte[] mergePdfs(List<MultipartFile> files) throws IOException {
+        PDFMergerUtility merger = new PDFMergerUtility();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        merger.setDestinationStream(out);
+
+        List<InputStream> streams = new ArrayList<>();
+        try {
+            for (MultipartFile file : files) {
+                InputStream in = file.getInputStream();
+                streams.add(in);
+                merger.addSource(in);
+            }
+            merger.mergeDocuments(org.apache.pdfbox.io.MemoryUsageSetting.setupMainMemoryOnly());
+        } finally {
+            for (InputStream in : streams) {
+                in.close();
+            }
+        }
+
+        return out.toByteArray();
     }
 
     private void validateFieldType(AnamnesisTemplateField field, String value) {
@@ -172,10 +215,5 @@ public class AnamnesisAnswerService {
         String name = file.getOriginalFilename();
         return "application/pdf".equalsIgnoreCase(contentType)
                 || (name != null && name.toLowerCase().endsWith(".pdf"));
-    }
-
-    private String sanitizeFileName(String name) {
-        if (name == null) return "arquivo.pdf";
-        return name.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }

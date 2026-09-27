@@ -16,12 +16,13 @@ public record AnamnesisReferralResponseDTO(
         Date sentAt
 ) {
     public static AnamnesisReferralResponseDTO fromEntity(AnamnesisReferral referral) {
+        var patient = referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient() : null;
         return new AnamnesisReferralResponseDTO(
                 referral.getId(),
-                referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getName() : null,
-                referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getId() : null,
+                patient != null ? patient.getName() : null,
+                patient != null ? patient.getId() : null,
                 referral.getProfessional() != null ? referral.getProfessional().getName() : null,
-                referral.getAnamnesis() != null ? referral.getAnamnesis().getPatient().getGuardian().getName() : null,
+                patient != null && patient.getGuardian() != null ? patient.getGuardian().getName() : null,
                 referral.getAnamnesis() != null ? referral.getAnamnesis().getId() : null,
                 referral.getProfessional() != null ? referral.getProfessional().getId() : null,
                 referral.getSender() != null ? referral.getSender().getId() : null,

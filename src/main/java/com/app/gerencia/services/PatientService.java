@@ -1,10 +1,18 @@
 package com.app.gerencia.services;
 
+import com.app.gerencia.entities.Anamnesis;
+import com.app.gerencia.entities.Contract;
 import com.app.gerencia.entities.Guardian;
 import com.app.gerencia.entities.Patient;
+import com.app.gerencia.repository.AnamnesisAnswerRepository;
+import com.app.gerencia.repository.AnamnesisRepository;
+import com.app.gerencia.repository.AppointmentRepository;
+import com.app.gerencia.repository.ContractRepository;
+import com.app.gerencia.repository.FrequencyRepository;
 import com.app.gerencia.repository.ChargeRepository;
 import com.app.gerencia.repository.GuardianRepository;
 import com.app.gerencia.repository.PatientRepository;
+import com.app.gerencia.repository.RecordRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +29,24 @@ public class PatientService {
     @Autowired
     private GuardianRepository guardianRepository;
 
+    // Dependências usadas apenas para o cascade manual de exclusão do paciente (delete())
+    @Autowired
+    private FrequencyRepository frequencyRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private RecordRepository recordRepository;
+
+    @Autowired
+    private AnamnesisRepository anamnesisRepository;
+
+    @Autowired
+    private AnamnesisAnswerRepository anamnesisAnswerRepository;
+
+    @Autowired
+    private ContractRepository contractRepository;
     @Autowired
     private ChargeRepository chargeRepository;
 
@@ -90,17 +116,43 @@ public class PatientService {
         return "Paciente atualizado com sucesso!";
     }
 
-    public String delete(Long id){
+    // Exclusão em cascata: remove manualmente tudo que referencia o paciente antes de excluí-lo,
+    // já que nem toda relação declara cascade JPA (ex: Frequency/Appointment não cascateiam a
+    // partir do Patient) e não há ON DELETE CASCADE no banco (ddl-auto=update não configura isso).
+    // Ordem importa: filhos antes dos pais, para nunca violar uma FK no meio do caminho.
+    @Transactional
+    public String delete(Long id) {
 
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
 
+        // Agenda: Frequency referencia o paciente diretamente e não tem cascade a partir de
+        // Appointment (proposital, para nunca apagar histórico de presença sozinho) — remove
+        // as frequências primeiro, depois os agendamentos.
+        frequencyRepository.deleteAllByPatientId(id);
+        appointmentRepository.deleteAllByPatientId(id);
+
+        // Fichas de atendimento (só depois de remover agendamentos/frequências, que as referenciam)
+        recordRepository.deleteAllByPatientId(id);
         if (chargeRepository.existsByPatientId(id)) {
             throw new IllegalStateException("Paciente possui cobranças financeiras associadas e não pode ser excluído");
         }
 
         patientRepository.delete(patient);
 
+        // Anamneses: as respostas não têm cascade a partir de Anamnesis, então são removidas
+        // explicitamente; o encaminhamento (referral) já cascateia via JPA ao remover a anamnese.
+        List<Anamnesis> anamneses = anamnesisRepository.findByPatientId(id);
+        for (Anamnesis anamnesis : anamneses) {
+            anamnesisAnswerRepository.deleteAllByAnamnesisId(anamnesis.getId());
+        }
+        anamnesisRepository.deleteAll(anamneses);
+
+        // Contratos: participantes, assinaturas e aceites já cascateiam via JPA a partir do Contract
+        List<Contract> contracts = contractRepository.findByPatientIdOrderByCreatedAtDesc(id);
+        contractRepository.deleteAll(contracts);
+
+        patientRepository.delete(patient);
 
         return "Excluído com sucesso!";
     }
