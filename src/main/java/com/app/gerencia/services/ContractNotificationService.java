@@ -2,6 +2,7 @@ package com.app.gerencia.services;
 
 import com.app.gerencia.entities.*;
 import com.app.gerencia.repository.ContractParticipantRepository;
+import com.app.gerencia.utils.FileNaming;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -60,7 +61,7 @@ public class ContractNotificationService {
 
         emailService.sendEmailWithAttachment(
                 guardian.getEmail(), subject, body,
-                pdfBytes, "contrato_" + contract.getId() + "_assinado.pdf"
+                pdfBytes, FileNaming.generate("contrato", "pdf")
         );
     }
 

@@ -10,4 +10,7 @@ import java.util.List;
 public interface RecordRepository extends JpaRepository<AttendanceRecord, Long> {
     List<AttendanceRecord> findByPatientIdOrderBySessionDateDesc(Long patientId);
     List<AttendanceRecord> findAllByOrderByCreatedAtDesc();
+
+    // Usado ao excluir um paciente — chamado após agendamentos/frequências que a referenciam
+    void deleteAllByPatientId(Long patientId);
 }

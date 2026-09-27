@@ -3,6 +3,7 @@ package com.app.gerencia.services;
 import com.app.gerencia.controllers.dto.AnamnesisReferralRequestDTO;
 import com.app.gerencia.entities.*;
 import com.app.gerencia.repository.*;
+import com.app.gerencia.utils.FileNaming;
 import com.app.gerencia.utils.PdfGenerator;
 import com.nimbusds.jose.shaded.gson.Gson;
 import jakarta.persistence.EntityNotFoundException;
@@ -129,7 +130,7 @@ public class AnamnesisReferralService {
             emailService.sendEmailWithAttachment(
                     professional.getEmail(), subject, body,
                     pdfBytes,
-                    "relatorio-anamnese-" + saved.getId() + ".pdf"
+                    FileNaming.generate("relatorio", "pdf")
             );
         }
 
@@ -143,9 +144,10 @@ public class AnamnesisReferralService {
                         "Encaminhamento não encontrado: " + id));
     }
 
+    // Visão total do admin: todos os encaminhamentos, incluindo os que ainda não foram
+    // atribuídos a um profissional (antes só listava os já atribuídos, escondendo pendências)
     public List<AnamnesisReferral> findAll() {
-        return referralRepository.findAllByProfessionalIdIsNotNull()
-                .orElse(Collections.emptyList());
+        return referralRepository.findAll();
     }
 
 
@@ -157,13 +159,17 @@ public class AnamnesisReferralService {
         var list = answers.stream()
                 .sorted(Comparator.comparingInt(a -> a.getField().getPosition()))
                 .map(a -> {
-                    Map<String, String> entry = new LinkedHashMap<>();
+                    Map<String, Object> entry = new LinkedHashMap<>();
+                    entry.put("fieldId", a.getField().getId());
                     entry.put("label", a.getField().getLabel());
                     entry.put("fieldType", a.getField().getFieldType().name());
                     if (a.getField().getFieldType() == AnamnesisTemplateField.FieldType.FILE) {
-                        entry.put("value", a.getFileData() != null
-                                ? "[Arquivo: " + a.getFileName() + "]"
-                                : "[Sem arquivo]");
+                        boolean hasFile = a.getFileData() != null;
+                        entry.put("hasFile", hasFile);
+                        entry.put("fileName", hasFile ? a.getFileName() : null);
+                        // anamnesisId permite montar a URL de download do arquivo no frontend
+                        entry.put("anamnesisId", a.getAnamnesis().getId());
+                        entry.put("value", null);
                     } else {
                         entry.put("value", a.getValue() != null ? a.getValue() : "");
                     }

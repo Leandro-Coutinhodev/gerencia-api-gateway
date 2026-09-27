@@ -51,7 +51,7 @@ public record AnamnesisDTO(
                 anamnesis.getPatient().getName(),
                 AnamnesisTemplateDTO.fromEntity(anamnesis.getTemplate()),
                 mapAnswers(anamnesis.getId(), anamnesis.getAnswers()),
-                host + "/formulario?token=" + token
+                host + "/form-anamnese/" + token
         );
     }
 

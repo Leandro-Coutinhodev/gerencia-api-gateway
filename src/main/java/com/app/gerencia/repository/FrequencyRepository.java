@@ -41,4 +41,7 @@ public interface FrequencyRepository extends JpaRepository<Frequency, Long> {
             Long appointmentId, LocalDate fromDate, FrequencyStatus status);
 
     boolean existsByAppointmentIdAndStatus(Long appointmentId, FrequencyStatus status);
+
+    // Usado ao excluir um paciente: remove todas as frequências dele antes dos agendamentos
+    void deleteAllByPatientId(Long patientId);
 }

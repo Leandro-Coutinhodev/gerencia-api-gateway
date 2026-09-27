@@ -24,4 +24,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> search(@Param("professionalId") Long professionalId,
                               @Param("patientId") Long patientId,
                               @Param("status") AppointmentStatus status);
+
+    // Usado ao excluir um paciente — chamado após as frequências dele já terem sido removidas
+    void deleteAllByPatientId(Long patientId);
 }

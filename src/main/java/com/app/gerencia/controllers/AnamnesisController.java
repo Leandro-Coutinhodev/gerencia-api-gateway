@@ -215,7 +215,7 @@ public class AnamnesisController {
 
             Anamnesis saved = anamnesisService.save(anamnesis);
             String token = anamnesisTokenService.generateToken(patient.getId(), saved.getId());
-            String link = host + "/formulario?token=" + token;
+            String link = host + "/form-anamnese/" + token;
 
             return ResponseEntity.ok(link);
         } catch (EntityNotFoundException e) {
@@ -259,11 +259,13 @@ public class AnamnesisController {
             MultipartHttpServletRequest multipartRequest  // ← substitui MultipartFile[] files
     ) {
         try {
-            // Extrai apenas os parts cujo nome segue a convenção "file_{fieldId}"
-            List<MultipartFile> files = multipartRequest.getFileMap()
+            // Extrai todos os parts cujo nome segue a convenção "file_{fieldId}" — usa
+            // getMultiFileMap (não getFileMap) porque um mesmo campo pode ter vários PDFs
+            // selecionados (mesmo nome de part repetido), que serão mesclados em um só arquivo.
+            List<MultipartFile> files = multipartRequest.getMultiFileMap()
                     .entrySet().stream()
                     .filter(e -> e.getKey().startsWith("file_"))
-                    .map(Map.Entry::getValue)
+                    .flatMap(e -> e.getValue().stream())
                     .collect(Collectors.toList());
 
             Anamnesis saved = anamnesisService.respond(id, dto, files);
@@ -366,11 +368,15 @@ public class AnamnesisController {
     }
 
 
+    @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     @GetMapping("/anamnesis/referral/findall")
     public ResponseEntity<?> listReferral() {
         try {
-            List<AnamnesisReferral> referrals = referralService.findAll();
+            // DTO, não a entidade: AnamnesisReferral.anamnesis usa @JsonBackReference e seria
+            // omitido na serialização direta, perdendo paciente/profissional na listagem.
+            List<AnamnesisReferralResponseDTO> referrals = referralService.findAll()
+                    .stream().map(AnamnesisReferralResponseDTO::fromEntity).toList();
             return ResponseEntity.ok(referrals);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -398,7 +404,9 @@ public class AnamnesisController {
                 }
             }
 
-            return ResponseEntity.ok(referral);
+            // Retorna o DTO (não a entidade): AnamnesisReferral.anamnesis usa @JsonBackReference
+            // e seria omitido na serialização direta, perdendo paciente/anamnesisId no frontend.
+            return ResponseEntity.ok(AnamnesisReferralResponseDTO.fromEntity(referral));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {

@@ -5,6 +5,7 @@ import com.app.gerencia.entities.*;
 import com.app.gerencia.enums.ContractStatus;
 import com.app.gerencia.enums.ParticipantRole;
 import com.app.gerencia.repository.*;
+import com.app.gerencia.utils.FileNaming;
 import com.google.gson.Gson;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -174,7 +175,8 @@ public class ContractService {
         contract.setGuardian(guardian);
         contract.setStatus(ContractStatus.ASSINADO_EXTERNAMENTE);
         contract.setExternalPdfData(file.getBytes());
-        contract.setExternalPdfFileName(file.getOriginalFilename());
+        // Nome gerado (data + token) — nunca o nome original enviado, que pode conter nomes
+        contract.setExternalPdfFileName(FileNaming.generate("contrato", "pdf"));
         contract.setHash(generateHash(new String(file.getBytes(), StandardCharsets.UTF_8)));
         contract.setCreatedIp(ip);
         contract.setCreatedByUserId(createdByUserId);
@@ -261,7 +263,7 @@ public class ContractService {
             try {
                 byte[] pdf = pdfService.generateFinalPdf(contract);
                 contract.setPdfData(pdf);
-                contract.setPdfFileName("contrato_" + contract.getId() + "_assinado.pdf");
+                contract.setPdfFileName(FileNaming.generate("contrato", "pdf"));
                 notificationService.sendFinalPdfToGuardian(contract, pdf);
             } catch (Exception e) {
                 e.printStackTrace();

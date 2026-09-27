@@ -3,6 +3,7 @@ package com.app.gerencia.services;
 import com.app.gerencia.controllers.dto.AnamnesisResponseSubmitDTO;
 import com.app.gerencia.entities.Anamnesis;
 import com.app.gerencia.entities.Patient;
+import com.app.gerencia.repository.AnamnesisAnswerRepository;
 import com.app.gerencia.repository.AnamnesisRepository;
 import com.app.gerencia.repository.PatientRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -20,13 +21,16 @@ public class AnamnesisService {
     private final AnamnesisRepository anamnesisRepository;
     private final PatientRepository patientRepository;
     private final AnamnesisAnswerService answerService;
+    private final AnamnesisAnswerRepository answerRepository;
 
     public AnamnesisService(AnamnesisRepository anamnesisRepository,
                             PatientRepository patientRepository,
-                            AnamnesisAnswerService answerService) {
+                            AnamnesisAnswerService answerService,
+                            AnamnesisAnswerRepository answerRepository) {
         this.anamnesisRepository = anamnesisRepository;
         this.patientRepository = patientRepository;
         this.answerService = answerService;
+        this.answerRepository = answerRepository;
     }
 
     public Anamnesis save(Anamnesis anamnesis) {
@@ -74,6 +78,9 @@ public class AnamnesisService {
         if (!anamnesisRepository.existsById(id)) {
             throw new EntityNotFoundException("Anamnese não encontrada com id: " + id);
         }
+        // As respostas não têm cascade a partir de Anamnesis — removidas explicitamente para
+        // não violar a FK ao excluir a anamnese (o referral, esse sim, já cascateia via JPA).
+        answerRepository.deleteAllByAnamnesisId(id);
         anamnesisRepository.deleteById(id);
     }
 }

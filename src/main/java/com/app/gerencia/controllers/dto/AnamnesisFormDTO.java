@@ -25,7 +25,7 @@ public class AnamnesisFormDTO {
         this.anamnesisId   = anamnesis.getId();
         this.status        = anamnesis.getStatus();
         this.patientName   = anamnesis.getPatient().getName();
-        this.formLink      = host + "/formulario?token=" + token;
+        this.formLink      = host + "/form-anamnese/" + token;
         this.template      = AnamnesisTemplateDTO.fromEntity(anamnesis.getTemplate());
         this.existingAnswers = existingAnswers.stream()
                 .map(AnswerDTO::fromEntity)
