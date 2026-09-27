@@ -11,8 +11,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -65,6 +67,8 @@ public class ContractService {
             String ip,
             Long createdByUserId
     ) {
+        validateFinancialData(req.contractValue(), req.startDate(), req.endDate(), req.paymentDate());
+
         Patient patient = patientRepository.findById(req.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado"));
         Guardian guardian = guardianRepository.findById(req.guardianId())
@@ -87,6 +91,10 @@ public class ContractService {
         contract.setCreatedIp(ip);
         contract.setCreatedByUserId(createdByUserId);
         contract.setHash(generateHash(renderedContent));
+        contract.setContractValue(req.contractValue());
+        contract.setStartDate(req.startDate());
+        contract.setEndDate(req.endDate());
+        contract.setPaymentDate(req.paymentDate());
         contract = contractRepository.save(contract);
 
 
@@ -154,6 +162,8 @@ public class ContractService {
         if (file == null || file.isEmpty())
             throw new IllegalArgumentException("Arquivo PDF é obrigatório");
 
+        validateFinancialData(req.contractValue(), req.startDate(), req.endDate(), req.paymentDate());
+
         Patient patient = patientRepository.findById(req.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado"));
         Guardian guardian = guardianRepository.findById(req.guardianId())
@@ -168,6 +178,10 @@ public class ContractService {
         contract.setHash(generateHash(new String(file.getBytes(), StandardCharsets.UTF_8)));
         contract.setCreatedIp(ip);
         contract.setCreatedByUserId(createdByUserId);
+        contract.setContractValue(req.contractValue());
+        contract.setStartDate(req.startDate());
+        contract.setEndDate(req.endDate());
+        contract.setPaymentDate(req.paymentDate());
 
         return contractRepository.save(contract);
     }
@@ -312,6 +326,24 @@ public class ContractService {
     }
 
    // Funções auxiliares
+
+    // Dados exigidos para controle financeiro e relatórios (independe do modo de criação)
+    private void validateFinancialData(
+            BigDecimal contractValue, LocalDate startDate, LocalDate endDate, LocalDate paymentDate
+    ) {
+        if (contractValue == null)
+            throw new IllegalArgumentException("O valor do contrato é obrigatório");
+        if (contractValue.compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("O valor do contrato deve ser maior que zero");
+        if (startDate == null)
+            throw new IllegalArgumentException("A data de início é obrigatória");
+        if (endDate == null)
+            throw new IllegalArgumentException("A data de fim é obrigatória");
+        if (endDate.isBefore(startDate))
+            throw new IllegalArgumentException("A data de fim não pode ser anterior à data de início");
+        if (paymentDate == null)
+            throw new IllegalArgumentException("A data de pagamento é obrigatória");
+    }
 
     private Map<String, String> buildVariableMap(
             CreateContractForSigningRequestDTO req, Patient patient, Guardian guardian) {

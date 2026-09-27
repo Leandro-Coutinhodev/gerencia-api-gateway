@@ -1,5 +1,7 @@
 package com.app.gerencia.controllers.dto.contract;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record CreateContractForSigningRequestDTO(
@@ -14,5 +16,11 @@ public record CreateContractForSigningRequestDTO(
         Boolean hasWitnesses,
 
 
-        List<Long> witnessUserIds
+        List<Long> witnessUserIds,
+
+        // Dados financeiros — obrigatórios, usados para controle financeiro e relatórios
+        BigDecimal contractValue,
+        LocalDate startDate,
+        LocalDate endDate,
+        LocalDate paymentDate
 ) {}
