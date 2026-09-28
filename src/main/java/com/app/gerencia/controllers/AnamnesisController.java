@@ -354,6 +354,21 @@ public class AnamnesisController {
         }
     }
 
+    // Histórico de encaminhamento de um paciente — todos os encaminhamentos de todas as
+    // anamneses desse paciente, usado na tela de "Histórico de Encaminhamento".
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyAuthority('SCOPE_PROFESSIONAL', 'SCOPE_ADMIN')")
+    @GetMapping("/anamnesis/referral/patient/{patientId}")
+    public ResponseEntity<?> findReferralsByPatient(@PathVariable Long patientId) {
+        try {
+            List<AnamnesisReferralResponseDTO> referrals = referralService.findByPatientId(patientId)
+                    .stream().map(AnamnesisReferralResponseDTO::fromEntity).toList();
+            return ResponseEntity.ok(referrals);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erro ao buscar histórico: " + e.getMessage());
+        }
+    }
+
     @PreAuthorize("hasAuthority('SCOPE_PROFESSIONAL')")
     @GetMapping("/anamnesis/referral/my")
     public ResponseEntity<?> findMyReferrals() {

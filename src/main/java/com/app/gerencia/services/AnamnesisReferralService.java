@@ -150,6 +150,20 @@ public class AnamnesisReferralService {
         return referralRepository.findAll();
     }
 
+    // Histórico de encaminhamento de um paciente: todos os encaminhamentos de todas as
+    // anamneses desse paciente, mais recentes primeiro.
+    public List<AnamnesisReferral> findByPatientId(Long patientId) {
+        List<Long> anamnesisIds = anamnesisRepository.findByPatientId(patientId)
+                .stream().map(Anamnesis::getId).toList();
+
+        if (anamnesisIds.isEmpty()) return List.of();
+
+        return referralRepository.findAllByAnamnesisIdIn(anamnesisIds)
+                .stream()
+                .sorted(Comparator.comparing(AnamnesisReferral::getSentAt).reversed())
+                .toList();
+    }
+
 
     public List<AnamnesisReferral> findByProfessionalId(Long id) {
         return referralRepository.findAllByProfessionalIdIsNotNullAndProfessionalId(id);
