@@ -126,6 +126,11 @@ public class PatientService {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
 
+        // Bloqueio do financeiro: checado antes de qualquer exclusão em cascata.
+        if (chargeRepository.existsByPatientId(id)) {
+            throw new IllegalStateException("Paciente possui cobranças financeiras associadas e não pode ser excluído");
+        }
+
         // Agenda: Frequency referencia o paciente diretamente e não tem cascade a partir de
         // Appointment (proposital, para nunca apagar histórico de presença sozinho) — remove
         // as frequências primeiro, depois os agendamentos.
@@ -134,11 +139,6 @@ public class PatientService {
 
         // Fichas de atendimento (só depois de remover agendamentos/frequências, que as referenciam)
         recordRepository.deleteAllByPatientId(id);
-        if (chargeRepository.existsByPatientId(id)) {
-            throw new IllegalStateException("Paciente possui cobranças financeiras associadas e não pode ser excluído");
-        }
-
-        patientRepository.delete(patient);
 
         // Anamneses: as respostas não têm cascade a partir de Anamnesis, então são removidas
         // explicitamente; o encaminhamento (referral) já cascateia via JPA ao remover a anamnese.
