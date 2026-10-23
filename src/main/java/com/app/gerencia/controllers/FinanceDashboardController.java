@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api-gateway/gerencia/financeiro/relatorio")
-@PreAuthorize("hasAnyAuthority('SCOPE_SECRETARY', 'SCOPE_ADMIN')")
+@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
 public class FinanceDashboardController {
 
     private final FinanceDashboardService financeDashboardService;
