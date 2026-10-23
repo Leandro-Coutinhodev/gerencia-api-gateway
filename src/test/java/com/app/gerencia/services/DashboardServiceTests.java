@@ -25,6 +25,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,7 +69,7 @@ class DashboardServiceTests {
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList()))
                 .thenReturn(List.of(buildReferral(1L)));
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.financeiro()).isNotNull();
         assertThat(result.financeiro().saldoAcumulado()).isEqualByComparingTo("1000.00");
@@ -90,7 +92,7 @@ class DashboardServiceTests {
         when(patientService.findByBirthMonth(null)).thenReturn(List.of());
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList())).thenReturn(List.of());
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.financeiro()).isNull();
         assertThat(result.contratos()).isNotNull();
@@ -105,7 +107,7 @@ class DashboardServiceTests {
         when(patientService.findByBirthMonth(null)).thenReturn(List.of());
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList())).thenReturn(List.of());
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.financeiro()).isNotNull();
         assertThat(result.contratos()).isNull();
@@ -120,7 +122,7 @@ class DashboardServiceTests {
         when(patientService.findByBirthMonth(null)).thenThrow(new RuntimeException("boom"));
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList())).thenReturn(List.of());
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.financeiro()).isNotNull();
         assertThat(result.contratos()).isNotNull();
@@ -136,7 +138,7 @@ class DashboardServiceTests {
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList()))
                 .thenThrow(new RuntimeException("boom"));
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.financeiro()).isNotNull();
         assertThat(result.contratos()).isNotNull();
@@ -151,7 +153,7 @@ class DashboardServiceTests {
         when(patientService.findByBirthMonth(null)).thenReturn(List.of());
         when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList())).thenReturn(List.of());
 
-        DashboardDTO result = dashboardService.generate();
+        DashboardDTO result = dashboardService.generate(true);
 
         assertThat(result.contratos()).isNotNull();
         assertThat(result.contratos().aguardandoAssinaturaContagem()).isZero();
@@ -160,6 +162,22 @@ class DashboardServiceTests {
         assertThat(result.anamnese()).isNotNull();
         assertThat(result.anamnese().pendentesContagem()).isZero();
         assertThat(result.anamnese().recentes()).isEmpty();
+    }
+
+    @Test
+    void generate_semFinanceiro_retornaBlocoNullSemCalcular() {
+        when(contractRepository.findByStatusOrderByCreatedAtDesc(ContractStatus.AGUARDANDO_ASSINATURA))
+                .thenReturn(List.of());
+        when(patientService.findByBirthMonth(null)).thenReturn(List.of());
+        when(anamnesisReferralRepository.findByAnamnesis_StatusInOrderBySentAtDesc(anyList()))
+                .thenReturn(List.of());
+
+        DashboardDTO result = dashboardService.generate(false);
+
+        assertThat(result.financeiro()).isNull();
+        assertThat(result.contratos()).isNotNull();
+        assertThat(result.anamnese()).isNotNull();
+        verify(financeDashboardService, never()).generate(any());
     }
 
     private FinanceDashboardDTO financeDashboardDTO() {
