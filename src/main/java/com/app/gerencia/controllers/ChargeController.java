@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api-gateway/gerencia/financeiro/cobranca")
-@PreAuthorize("hasAnyAuthority('SCOPE_SECRETARY', 'SCOPE_ADMIN')")
+@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
 public class ChargeController {
 
     private final ChargeService chargeService;

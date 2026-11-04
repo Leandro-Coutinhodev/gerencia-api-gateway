@@ -36,9 +36,9 @@ public class DashboardService {
         this.anamnesisReferralRepository = anamnesisReferralRepository;
     }
 
-    public DashboardDTO generate() {
+    public DashboardDTO generate(boolean incluirFinanceiro) {
         return new DashboardDTO(
-                buildFinanceiro(),
+                incluirFinanceiro ? buildFinanceiro() : null,
                 buildContratos(),
                 buildAniversariantes(),
                 buildAnamnese()

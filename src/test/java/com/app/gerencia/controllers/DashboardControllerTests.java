@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,9 +43,9 @@ class DashboardControllerTests {
                 List.of(),
                 new DashboardDTO.AnamneseResumoDTO(1, List.of())
         );
-        when(dashboardService.generate()).thenReturn(dto);
+        when(dashboardService.generate(true)).thenReturn(dto);
 
-        mockMvc.perform(get(BASE_URL))
+        mockMvc.perform(get(BASE_URL).principal(auth("SCOPE_ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.financeiro.saldoAcumulado").value(1000.00))
                 .andExpect(jsonPath("$.contratos.aguardandoAssinaturaContagem").value(2))
@@ -57,10 +60,26 @@ class DashboardControllerTests {
                 List.of(),
                 new DashboardDTO.AnamneseResumoDTO(0, List.of())
         );
-        when(dashboardService.generate()).thenReturn(dto);
+        when(dashboardService.generate(false)).thenReturn(dto);
 
-        mockMvc.perform(get(BASE_URL))
+        mockMvc.perform(get(BASE_URL).principal(auth("SCOPE_SECRETARY")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.financeiro").doesNotExist());
+    }
+
+    @Test
+    void get_naoAdmin_pedeDashboardSemFinanceiro() throws Exception {
+        DashboardDTO dto = new DashboardDTO(null, null, List.of(), null);
+        when(dashboardService.generate(false)).thenReturn(dto);
+
+        mockMvc.perform(get(BASE_URL).principal(auth("SCOPE_PROFESSIONAL")))
+                .andExpect(status().isOk());
+
+        verify(dashboardService).generate(false);
+        verify(dashboardService, never()).generate(true);
+    }
+
+    private TestingAuthenticationToken auth(String authority) {
+        return new TestingAuthenticationToken("1", null, authority);
     }
 }
