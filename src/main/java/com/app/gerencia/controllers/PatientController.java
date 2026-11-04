@@ -51,6 +51,7 @@ public class PatientController {
 
         try{
             Patient patient = patientService.findById(id);
+            patientService.enrichWithContractStatus(patient);
 
             return ResponseEntity.ok(patient);
         } catch (Exception e) {
@@ -63,6 +64,7 @@ public class PatientController {
 
         try{
             List<Patient> patients = patientService.findAll();
+            patientService.enrichAllWithContractStatus(patients);
 
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
@@ -102,6 +104,7 @@ public class PatientController {
     public ResponseEntity<List<Patient>> findByCpf(@RequestParam(required = false) String cpf) {
         try {
             List<Patient> patients = patientService.findByCpf(cpf);
+            patientService.enrichAllWithContractStatus(patients);
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -112,6 +115,7 @@ public class PatientController {
     public ResponseEntity<List<Patient>> searchByName(@RequestParam String nome) {
         try {
             List<Patient> patients = patientService.findByName(nome);
+            patientService.enrichAllWithContractStatus(patients);
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
             e.printStackTrace();
@@ -123,6 +127,7 @@ public class PatientController {
     public ResponseEntity<List<Patient>> searchByGuardian(@PathVariable Long guardianId) {
         try {
             List<Patient> patients = patientService.searchByGuardian(guardianId);
+            patientService.enrichAllWithContractStatus(patients);
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
             e.printStackTrace();
@@ -146,6 +151,7 @@ public class PatientController {
     public ResponseEntity<List<Patient>> searchPatients(@RequestParam String query) {
         try {
             List<Patient> patients = patientService.searchByNameOrCpf(query);
+            patientService.enrichAllWithContractStatus(patients);
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -157,6 +163,7 @@ public class PatientController {
     public ResponseEntity<List<Patient>> findBirthdayPatients(
             @RequestParam(required = false) Integer month) {
         List<Patient> patients = patientService.findByBirthMonth(month);
+        patientService.enrichAllWithContractStatus(patients);
         return ResponseEntity.ok(patients);
     }
 }

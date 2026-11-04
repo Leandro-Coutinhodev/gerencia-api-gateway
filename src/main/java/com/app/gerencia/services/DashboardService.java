@@ -41,7 +41,8 @@ public class DashboardService {
                 buildFinanceiro(),
                 buildContratos(),
                 buildAniversariantes(),
-                buildAnamnese()
+                buildAnamnese(),
+                buildPacientes()
         );
     }
 
@@ -81,6 +82,17 @@ public class DashboardService {
             return patientService.findByBirthMonth(null);
         } catch (Exception e) {
             log.warn("Falha ao calcular o bloco de aniversariantes do dashboard geral", e);
+            return null;
+        }
+    }
+
+    private DashboardDTO.PacientesResumoDTO buildPacientes() {
+        try {
+            List<Patient> todos = patientService.enrichAllWithContractStatus(patientService.findAll());
+            long ativos = todos.stream().filter(p -> "ATIVO".equals(p.getStatus())).count();
+            return new DashboardDTO.PacientesResumoDTO(todos.size(), ativos);
+        } catch (Exception e) {
+            log.warn("Falha ao calcular o bloco de pacientes do dashboard geral", e);
             return null;
         }
     }

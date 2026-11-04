@@ -4,6 +4,8 @@ import com.app.gerencia.entities.Anamnesis;
 import com.app.gerencia.entities.Contract;
 import com.app.gerencia.entities.Guardian;
 import com.app.gerencia.entities.Patient;
+import com.app.gerencia.enums.ContractStatus;
+import com.app.gerencia.enums.PatientStatus;
 import com.app.gerencia.repository.AnamnesisAnswerRepository;
 import com.app.gerencia.repository.AnamnesisRepository;
 import com.app.gerencia.repository.AppointmentRepository;
@@ -18,7 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class PatientService {
@@ -86,6 +90,36 @@ public class PatientService {
     public List<Patient> findAll(){
 
         return patientRepository.findAll();
+    }
+
+    // Calcula status e data de início do paciente a partir dos contratos dele (ignora
+    // contratos CANCELADO) e preenche os campos transientes de Patient:
+    //  - contractStartDate = data de início do contrato mais antigo (quando o paciente "entrou")
+    //  - status = ATIVO se existir algum contrato cujo fim ainda não chegou; senão INATIVO
+    public Patient enrichWithContractStatus(Patient patient) {
+        List<Contract> contracts = contractRepository.findByPatientIdOrderByCreatedAtDesc(patient.getId());
+        LocalDate hoje = LocalDate.now();
+
+        LocalDate inicio = contracts.stream()
+                .filter(c -> c.getStatus() != ContractStatus.CANCELADO)
+                .map(Contract::getStartDate)
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+
+        boolean ativo = contracts.stream()
+                .anyMatch(c -> c.getStatus() != ContractStatus.CANCELADO
+                        && c.getEndDate() != null
+                        && !c.getEndDate().isBefore(hoje));
+
+        patient.setContractStartDate(inicio);
+        patient.setStatus((ativo ? PatientStatus.ATIVO : PatientStatus.INATIVO).name());
+        return patient;
+    }
+
+    public List<Patient> enrichAllWithContractStatus(List<Patient> patients) {
+        patients.forEach(this::enrichWithContractStatus);
+        return patients;
     }
 
     @Transactional
