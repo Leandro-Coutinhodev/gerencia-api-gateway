@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -43,6 +44,32 @@ public class Patient {
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Anamnesis> anamneses;
+
+    // Campos calculados a partir dos contratos do paciente — nunca persistidos, preenchidos
+    // pelo PatientService (enrichWithContractStatus) antes da resposta. Mantidos fora do banco
+    // para não duplicar/desatualizar estado que já existe em Contract.
+    @Transient
+    private String status;
+
+    @Transient
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate contractStartDate;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDate getContractStartDate() {
+        return contractStartDate;
+    }
+
+    public void setContractStartDate(LocalDate contractStartDate) {
+        this.contractStartDate = contractStartDate;
+    }
 
     public String getKinship() {
         return kinship;

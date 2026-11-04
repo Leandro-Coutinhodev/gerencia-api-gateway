@@ -10,8 +10,15 @@ public record DashboardDTO(
         FinanceiroResumoDTO financeiro,
         ContratosResumoDTO contratos,
         List<Patient> aniversariantes,
-        AnamneseResumoDTO anamnese
+        AnamneseResumoDTO anamnese,
+        PacientesResumoDTO pacientes
 ) {
+    public record PacientesResumoDTO(
+            long totalContagem,
+            long ativosContagem
+    ) {
+    }
+
     public record FinanceiroResumoDTO(
             BigDecimal saldoAcumulado,
             BigDecimal aReceberValor,
