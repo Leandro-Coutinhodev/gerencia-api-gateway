@@ -41,7 +41,8 @@ class DashboardControllerTests {
                 new DashboardDTO.FinanceiroResumoDTO(new BigDecimal("1000.00"), new BigDecimal("300.00"), 3, 2, 1),
                 new DashboardDTO.ContratosResumoDTO(2, List.of()),
                 List.of(),
-                new DashboardDTO.AnamneseResumoDTO(1, List.of())
+                new DashboardDTO.AnamneseResumoDTO(1, List.of()),
+                new DashboardDTO.PacientesResumoDTO(5, 3)
         );
         when(dashboardService.generate(true)).thenReturn(dto);
 
@@ -49,7 +50,8 @@ class DashboardControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.financeiro.saldoAcumulado").value(1000.00))
                 .andExpect(jsonPath("$.contratos.aguardandoAssinaturaContagem").value(2))
-                .andExpect(jsonPath("$.anamnese.pendentesContagem").value(1));
+                .andExpect(jsonPath("$.anamnese.pendentesContagem").value(1))
+                .andExpect(jsonPath("$.pacientes.ativosContagem").value(3));
     }
 
     @Test
@@ -58,7 +60,8 @@ class DashboardControllerTests {
                 null,
                 new DashboardDTO.ContratosResumoDTO(0, List.of()),
                 List.of(),
-                new DashboardDTO.AnamneseResumoDTO(0, List.of())
+                new DashboardDTO.AnamneseResumoDTO(0, List.of()),
+                new DashboardDTO.PacientesResumoDTO(0, 0)
         );
         when(dashboardService.generate(false)).thenReturn(dto);
 
@@ -69,7 +72,7 @@ class DashboardControllerTests {
 
     @Test
     void get_naoAdmin_pedeDashboardSemFinanceiro() throws Exception {
-        DashboardDTO dto = new DashboardDTO(null, null, List.of(), null);
+        DashboardDTO dto = new DashboardDTO(null, null, List.of(), null, null);
         when(dashboardService.generate(false)).thenReturn(dto);
 
         mockMvc.perform(get(BASE_URL).principal(auth("SCOPE_PROFESSIONAL")))
