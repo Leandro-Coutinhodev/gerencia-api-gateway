@@ -375,11 +375,16 @@ public class ContractService {
         if (template.getClauses() != null) {
             for (ContractClause clause : template.getClauses()) {
                 sb.append("<section class=\"contract-clause\">");
-                sb.append("<h3>").append(clause.getClauseOrder())
-                        .append(". ").append(clause.getTitle()).append("</h3>");
+                sb.append("<h3><span class=\"clause-num\">").append(clause.getClauseOrder())
+                        .append("</span><span class=\"clause-title\">").append(clause.getTitle())
+                        .append("</span></h3>");
                 String content = clause.getContent();
                 for (Map.Entry<String, String> entry : variables.entrySet()) {
-                    content = content.replace("{{" + entry.getKey() + "}}", entry.getValue());
+                    String value = entry.getValue() != null ? entry.getValue() : "";
+                    // Marca o valor substituído com uma classe própria, para o frontend
+                    // conseguir destacá-lo visualmente (ver .contract-var no ContractSigningPage).
+                    content = content.replace("{{" + entry.getKey() + "}}",
+                            "<span class=\"contract-var\">" + value + "</span>");
                 }
                 sb.append("<p>").append(content).append("</p>");
                 sb.append("</section>");
